@@ -29,7 +29,7 @@ API = "https://api.github.com/repos/%s/%s/releases/latest"
 TAG_URL = "https://github.com/%s/%s/releases/tag/%s"
 
 # 本地版本：每次发版改这一行（日期式，好记也好比）
-VERSION = "2026.10.27"
+VERSION = "2026.10.28"
 
 STATE = {"phase": "idle", "done": 0, "total": 0, "msg": "", "err": ""}
 
@@ -68,8 +68,8 @@ def _proxies():
     return out
 
 
-def http_get(url, timeout=20, raw=False):
-    """先直连，失败再逐个试代理。返回 bytes 或 (bytes, headers)。"""
+def http_get(url, timeout=20, raw=False, with_url=False, method=None):
+    """先直连，失败再逐个试代理。返回 bytes / (bytes, headers) / (bytes, headers, 最终URL)。"""
     errs = []
     attempts = [None] + _proxies()
     for px in attempts:
@@ -78,11 +78,14 @@ def http_get(url, timeout=20, raw=False):
             if px:
                 handlers.append(urllib.request.ProxyHandler({"http": px, "https": px}))
             opener = urllib.request.build_opener(*handlers)
-            req = urllib.request.Request(url, headers={"User-Agent": UA,
-                                                       "Accept": "application/vnd.github+json"})
+            req = urllib.request.Request(url, headers={"User-Agent": UA}, method=method)
             with opener.open(req, timeout=timeout) as r:
                 body = r.read()
-                return (body, dict(r.headers)) if raw else body
+                hdrs = dict(r.headers)
+                final = r.geturl()
+                if with_url:
+                    return body, hdrs, final
+                return (body, hdrs) if raw else body
         except Exception as e:
             errs.append("%s: %s" % ("直连" if not px else px, e))
     raise RuntimeError("连不上 GitHub（%s）" % "；".join(errs[-2:]))
@@ -123,50 +126,53 @@ def load_config():
 # ---------------- 1. 查 ----------------
 
 def check():
+    """问「最新版是哪个」。
+
+    走 **releases/latest 的网页跳转**，不用 GitHub API —— API 匿名只有 60 次/小时，
+    共享网络（校园网/公司网）里很容易被别人用光，一旦 403 就会出现「检查更新一直失败」。
+    跳转这条路没有配额限制，也不需要 token。
+    """
     cfg = load_config()
     if not cfg:
         return {"ok": False, "reason": "no_config",
                 "detail": "程序旁边没有 update.json，自动更新没开。"}
-    url = API % (cfg["owner"], cfg["repo"])
+    owner, repo = cfg["owner"], cfg["repo"]
+    asset_name = cfg.get("asset") or "HextechHelper-win64.zip"
+
+    latest = "https://github.com/%s/%s/releases/latest" % (owner, repo)
     try:
-        body = http_get(url)
-        d = json.loads(body.decode("utf-8", "ignore"))
+        _, headers, final_url = http_get(latest, timeout=20, with_url=True)
     except Exception as e:
         return {"ok": False, "reason": "net", "detail": str(e)}
 
-    tag = (d.get("tag_name") or "").lstrip("vV")
+    tag = ""
+    m = re.search(r"/releases/tag/([^/?#]+)", final_url or "")
+    if m:
+        tag = m.group(1)
+    tag = tag.lstrip("vV")
     if not tag:
         return {"ok": False, "reason": "bad", "detail": "GitHub 上还没有发布版本。"}
 
-    asset = None
-    want = (cfg.get("asset") or "").lower()
-    for a in d.get("assets") or []:
-        n = (a.get("name") or "").lower()
-        if want and n == want:
-            asset = a
-            break
-        if not want and n.endswith(".zip"):
-            asset = a
-            break
-    if asset is None:
-        for a in d.get("assets") or []:
-            if (a.get("name") or "").lower().endswith(".zip"):
-                asset = a
-                break
-    if asset is None:
-        return {"ok": False, "reason": "no_asset",
-                "detail": "这个版本没带 zip 包（发布时要把 HextechHelper-win64.zip 传上去）。"}
+    # 资源固定在这个地址上，不用 API 也能下
+    asset_url = "https://github.com/%s/%s/releases/download/v%s/%s" % (
+        owner, repo, tag, asset_name)
+    size = 0
+    try:
+        _, h2, _ = http_get(asset_url, timeout=25, with_url=True, method="HEAD")
+        size = int(h2.get("Content-Length") or 0)
+    except Exception:
+        pass                       # 拿不到体积不影响升级，下载时会校验
 
     return {
         "ok": True,
         "version": VERSION,
         "latest": tag,
         "has_new": newer(tag, VERSION),
-        "url": asset.get("browser_download_url"),
-        "size": asset.get("size") or 0,
-        "notes": (d.get("body") or "")[:500],
-        "page": TAG_URL % (cfg["owner"], cfg["repo"], d.get("tag_name") or tag),
-        "published": d.get("published_at") or "",
+        "url": asset_url,
+        "size": size,
+        "notes": "",
+        "page": "https://github.com/%s/%s/releases/tag/v%s" % (owner, repo, tag),
+        "published": "",
     }
 
 
