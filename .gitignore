@@ -12,3 +12,6 @@ __pycache__/
 
 # 测试残留
 _t/
+
+# 本机登录脚本
+login-github.cmd
