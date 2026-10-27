@@ -14,6 +14,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -49,9 +50,13 @@ def main():
               "names.json", "index.html"]:
         shutil.copy2(os.path.join(ROOT, f), STAGE)
 
+    # 每次打到带时间戳的目录里：不覆盖上一次的产物，也不用先删 240MB 的旧目录
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    dist = os.path.join(DIST, stamp)
+
     print("[3/5] PyInstaller 打包（约 1 分钟）")
     run([sys.executable, "-m", "PyInstaller", "--noconfirm", "--windowed",
-         "--name", NAME, "--distpath", DIST, "--workpath", BUILD,
+         "--name", NAME, "--distpath", dist, "--workpath", BUILD,
          "--specpath", BUILD,
          "--collect-all", "rapidocr_onnxruntime", "--collect-all", "mss",
          "--collect-all", "pyclipper", "--collect-all", "shapely",
@@ -60,7 +65,7 @@ def main():
          "--add-data", os.path.join(STAGE, "names.json") + ";.",
          os.path.join(STAGE, "app.py")])
 
-    app_dir = os.path.join(DIST, NAME)
+    app_dir = os.path.join(dist, NAME)
 
     # update.json 必须跟着 exe 走，否则装到别人机器上不知道去哪个仓库查新版
     cfg_src = os.path.join(ROOT, "update.json")

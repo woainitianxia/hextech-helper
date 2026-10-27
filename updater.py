@@ -185,6 +185,68 @@ def _stage_dir():
     return d
 
 
+def _open_stream(url, offset=0, timeout=45):
+    """打开下载流：**先直连**，失败才逐个试代理。
+
+    踩过的坑：直接拿 `_proxies()[0]` 去下，那个代理只有 30KB/s，
+    101MB 的包要下一个小时还断流；直连实测 4.9MB/s，25 秒就完了。
+    """
+    last = None
+    for px in [None] + _proxies():
+        try:
+            handlers = []
+            if px:
+                handlers.append(urllib.request.ProxyHandler({"http": px, "https": px}))
+            opener = urllib.request.build_opener(*handlers)
+            headers = {"User-Agent": UA}
+            if offset:
+                headers["Range"] = "bytes=%d-" % offset
+            req = urllib.request.Request(url, headers=headers)
+            return opener.open(req, timeout=timeout)
+        except Exception as e:
+            last = e
+    raise last if last else RuntimeError("连不上")
+
+
+def _download(url, path, want_size=0, tries=12):
+    """带断点续传的下载：断了就从已下的字节接着下，不会再从头来。"""
+    got = os.path.getsize(path) if os.path.exists(path) else 0
+    if want_size and got >= want_size:
+        return got
+    STATE["done"] = got
+
+    for _ in range(tries):
+        try:
+            r = _open_stream(url, offset=got)
+            code = getattr(r, "status", 200) or 200
+            if got and code != 206:        # 服务器不支持续传 → 从头来
+                got = 0
+            mode = "ab" if got else "wb"
+            with io.open(path, mode) as f:
+                while True:
+                    chunk = r.read(256 * 1024)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    got += len(chunk)
+                    STATE["done"] = got
+                    if want_size and got >= want_size:
+                        break
+            try:
+                r.close()
+            except Exception:
+                pass
+        except Exception as e:
+            STATE["err"] = str(e)
+            time.sleep(1.2)
+        if want_size and got >= want_size:
+            break
+        if not want_size and got > 0:
+            break
+        time.sleep(0.8)
+    return got
+
+
 def download_and_stage(info, dest=None):
     """下 zip、解压、写好替换脚本。返回 {ok, script, dest, newdir}。
 
@@ -194,30 +256,18 @@ def download_and_stage(info, dest=None):
                   "msg": "正在下载新版本…", "err": ""})
     work = _stage_dir()
     pkg = os.path.join(work, "pkg.zip")
+    want = int(info.get("size") or 0)
 
     try:
-        req = urllib.request.Request(info["url"], headers={"User-Agent": UA})
-        handlers = []
-        for px in _proxies()[:1]:
-            handlers.append(urllib.request.ProxyHandler({"http": px, "https": px}))
-        opener = urllib.request.build_opener(*handlers)
-        with opener.open(req, timeout=60) as r, io.open(pkg, "wb") as f:
-            total = int(r.headers.get("Content-Length") or info.get("size") or 0)
-            STATE["total"] = total
-            while True:
-                chunk = r.read(1024 * 512)
-                if not chunk:
-                    break
-                f.write(chunk)
-                STATE["done"] += len(chunk)
+        got = _download(info["url"], pkg, want)
     except Exception as e:
         STATE.update({"phase": "error", "err": str(e)})
         return {"ok": False, "detail": "下载失败：%s" % e}
 
-    got = os.path.getsize(pkg)
-    if info.get("size") and abs(got - int(info["size"])) > 1024:
-        STATE.update({"phase": "error", "err": "体积对不上"})
-        return {"ok": False, "detail": "下载不完整（%d / %d 字节）" % (got, int(info["size"]))}
+    if want and abs(got - want) > 1024:
+        STATE.update({"phase": "error", "err": "下载不完整"})
+        return {"ok": False, "detail": "下载不完整（%.1f / %.1f MB）。网络断过，再点一次会接着下。"
+                                       % (got / 1048576.0, want / 1048576.0)}
 
     STATE.update({"phase": "extracting", "msg": "正在解压…"})
     newdir = os.path.join(work, "new")
