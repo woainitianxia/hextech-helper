@@ -1,0 +1,11 @@
+# 构建产物
+index.html
+dist/
+build/
+.stage/
+release/
+*.spec
+__pycache__/
+
+# 本机的东西
+*.log

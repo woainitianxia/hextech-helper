@@ -1,0 +1,2101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海克斯决策助手 · 海克斯大乱斗</title>
+<style>
+  :root{
+    --bg:#0a0e17; --panel:#121a29; --panel2:#1a2436; --panel3:#22304a;
+    --line:#26334c; --text:#e6edf7; --muted:#8494ab; --dim:#5d6b82;
+    --accent:#42d3a6; --gold:#f0b849; --red:#ff7a7a; --purple:#a78bfa; --blue:#5fa8fa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:
+      radial-gradient(1000px 520px at 12% -8%, rgba(66,211,166,.09), transparent 62%),
+      radial-gradient(800px 460px at 92% -4%, rgba(167,139,250,.09), transparent 62%),
+      var(--bg);
+    color:var(--text); font-size:15px; line-height:1.65; min-height:100vh;
+    font-family:"Microsoft YaHei UI","Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
+    padding-bottom:50px;
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:22px 20px 0}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:13px}
+  .sigil{width:42px;height:42px;flex:0 0 42px;border-radius:11px;background:linear-gradient(145deg,#1c2a42,#0f1723);border:1px solid #2e3f5c;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(66,211,166,.12) inset,0 6px 18px rgba(0,0,0,.42)}
+  .sigil svg{width:23px;height:23px}
+  h1{font-size:19px;font-weight:700;letter-spacing:.4px;line-height:1.3}
+  h1 small{display:block;font-size:11.5px;font-weight:400;color:var(--muted);letter-spacing:0;margin-top:2px}
+  .databar{font-size:11.5px;color:var(--muted);text-align:right;line-height:1.75}
+  .databar b{color:var(--gold);font-weight:600}
+  .databar a{color:var(--accent);text-decoration:none;border-bottom:1px dotted rgba(66,211,166,.4)}
+  .databar a:hover{border-bottom-style:solid}
+
+  nav.tabs{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+  .tab{
+    appearance:none;background:transparent;border:none;border-bottom:2px solid transparent;
+    color:var(--muted);font-family:inherit;font-size:13.5px;padding:11px 15px;cursor:pointer;
+    transition:.15s;line-height:1.2;margin-bottom:-1px;
+  }
+  .tab:hover{color:#cfdae9}
+  .tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+  .tab span{display:block;font-size:10.5px;color:var(--dim);font-weight:400;margin-top:1px}
+  .tab.on span{color:rgba(66,211,166,.6)}
+
+  .view{display:none;padding-top:20px;animation:fade .22s ease}
+  .view.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:17px}
+  .card + .card{margin-top:13px}
+  .lbl{font-size:11.5px;color:var(--muted);letter-spacing:.8px;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+  .lbl b{color:#c3cfe0;font-weight:600;letter-spacing:0}
+  .lbl i{font-style:normal;color:var(--dim);font-size:11px;letter-spacing:0;font-weight:400}
+
+  /* 搜索 */
+  .sw{position:relative}
+  input.search{
+    width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;
+    color:var(--text);font-family:inherit;font-size:14px;padding:11px 13px;outline:none;transition:.15s;
+  }
+  input.search::placeholder{color:#55637a}
+  input.search:focus{border-color:rgba(66,211,166,.55);box-shadow:0 0 0 3px rgba(66,211,166,.08)}
+  .sug{position:absolute;left:0;right:0;top:calc(100% + 5px);background:#16203300;z-index:30}
+  .sug-list{
+    background:#162033;border:1px solid #2c3c58;border-radius:10px;overflow:hidden;
+    box-shadow:0 14px 34px rgba(0,0,0,.55);max-height:290px;overflow-y:auto;
+  }
+  .sug-item{display:flex;align-items:center;gap:9px;padding:9px 12px;cursor:pointer;font-size:13.5px;border-bottom:1px solid #1e2a40}
+  .sug-item:last-child{border-bottom:none}
+  .sug-item:hover,.sug-item.hi{background:#1f2c46}
+  .sug-item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sug-empty{padding:11px 12px;font-size:12.5px;color:var(--dim)}
+
+  /* 梯队徽章 */
+  .tier{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:5px;font-size:11.5px;font-weight:700;flex:0 0 auto}
+  .tier[data-t="S"]{background:rgba(240,184,73,.18);color:#f5c569;box-shadow:0 0 0 1px rgba(240,184,73,.35) inset}
+  .tier[data-t="A"]{background:rgba(66,211,166,.15);color:#6ee0bd;box-shadow:0 0 0 1px rgba(66,211,166,.3) inset}
+  .tier[data-t="B"]{background:rgba(95,168,250,.13);color:#8dc0fb;box-shadow:0 0 0 1px rgba(95,168,250,.28) inset}
+  .tier[data-t="C"]{background:rgba(255,255,255,.06);color:#9aa9be;box-shadow:0 0 0 1px #33415c inset}
+  .tier[data-t="D"]{background:rgba(255,122,122,.12);color:#ff9a9a;box-shadow:0 0 0 1px rgba(255,122,122,.3) inset}
+  .tier[data-t=""]{background:rgba(255,255,255,.04);color:#5d6b80;box-shadow:0 0 0 1px #2a364e inset}
+
+  .rar{font-size:10.5px;padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.5px;white-space:nowrap}
+  .rar[data-r="3"]{background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;box-shadow:0 0 10px rgba(167,139,250,.4)}
+  .rar[data-r="2"]{background:linear-gradient(135deg,#c8891b,#f5d27a);color:#2b1d00}
+  .rar[data-r="1"]{background:linear-gradient(135deg,#71869f,#cfdae8);color:#141d2a}
+  .rrow .rk-tag{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px;flex:0 0 auto;vertical-align:middle}
+  .rk-tag[data-r="3"]{background:linear-gradient(135deg,#8b5cf6,#ec4899);box-shadow:0 0 8px rgba(167,139,250,.6)}
+  .rk-tag[data-r="2"]{background:#e5b04a}
+  .rk-tag[data-r="1"]{background:#9fb0c6}
+
+  /* 三选一槽 */
+  .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:820px){.slots{grid-template-columns:1fr}}
+  .slot{position:relative}
+  .slot .idx{font-size:10.5px;color:var(--dim);margin-bottom:5px;letter-spacing:.5px}
+  .slot input.filled{border-color:rgba(66,211,166,.45);background:rgba(66,211,166,.07);padding-right:34px}
+  .slot .clr{
+    position:absolute;right:9px;bottom:10px;width:20px;height:20px;border-radius:5px;
+    border:1px solid #33415c;background:#1a2436;color:var(--muted);font-size:13px;line-height:1;
+    cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;
+  }
+  .slot .clr.on{display:flex}
+  .slot .clr:hover{color:var(--red);border-color:rgba(255,122,122,.45)}
+
+  /* 对比卡 */
+  .cmp{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px}
+  @media(max-width:820px){.cmp{grid-template-columns:1fr}}
+  .cc{
+    background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px;position:relative;overflow:hidden;
+  }
+  .cc.best{border-color:rgba(66,211,166,.45);box-shadow:0 0 26px rgba(66,211,166,.09)}
+  .cc.best::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--accent)}
+  .cc-top{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+  .cc-name{font-size:15px;font-weight:700;line-height:1.35;flex:1;min-width:0}
+  .cc-badge{font-size:10.5px;padding:2px 7px;border-radius:9px;background:rgba(66,211,166,.16);color:#8ff0d0;border:1px solid rgba(66,211,166,.35)}
+  .cc-stats{display:flex;gap:14px;margin:10px 0 8px;flex-wrap:wrap}
+  .st{font-size:11px;color:var(--dim)}
+  .st b{display:block;font-size:14.5px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;line-height:1.25}
+  .st b.up{color:var(--accent)}
+  .st b.down{color:var(--red)}
+  .cc-eff{font-size:12px;color:#a7b5c9;line-height:1.7;border-top:1px dashed #24304a;padding-top:9px;margin-top:4px}
+  .cc-eff.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .cc-more{font-size:11px;color:var(--accent);cursor:pointer;margin-top:5px;display:block}
+  .cc-link{display:block;margin-top:6px;font-size:11px;color:var(--dim);text-decoration:none;border-bottom:1px dotted #3a4a68;width:fit-content}
+  .cc-link:hover{color:var(--accent)}
+
+  .scan-row{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+  .scan-btn{
+    appearance:none;border:1px solid rgba(66,211,166,.45);border-radius:9px;
+    background:linear-gradient(180deg,rgba(66,211,166,.18),rgba(66,211,166,.08));
+    color:#a8f0d8;font-family:inherit;font-size:13.5px;font-weight:600;padding:10px 18px;
+    cursor:pointer;transition:.15s;letter-spacing:.5px;
+  }
+  .scan-btn:hover{background:linear-gradient(180deg,rgba(66,211,166,.28),rgba(66,211,166,.12));box-shadow:0 0 18px rgba(66,211,166,.18)}
+  .scan-btn.on{border-color:rgba(255,122,122,.5);background:rgba(255,122,122,.12);color:#ffb3b3}
+  .top-btn{
+    appearance:none;border:1px solid #33415c;background:transparent;color:#8494ab;
+    font-family:inherit;font-size:12px;padding:9px 13px;border-radius:9px;cursor:pointer;transition:.15s;
+  }
+  .top-btn:hover{color:#a8f0d8;border-color:rgba(66,211,166,.45)}
+  .top-btn.on{color:#0b0f19;background:var(--accent);border-color:var(--accent);font-weight:600}
+  .scan-msg{font-size:12px;color:#8494ab}
+  .scan-msg.err{color:#d99a9a}
+  .scan-msg.ok{color:#6ee0bd}
+  .scan-diag{display:none;margin-top:9px;padding:9px 11px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);font-size:11.5px;line-height:1.85;color:var(--muted);font-family:Consolas,"Courier New",monospace}
+  .hotkey-tip{font-size:11.5px;color:var(--accent);margin-top:6px;min-height:16px}
+  .scan-diag b{color:var(--text);font-weight:600;font-family:"Microsoft YaHei UI",sans-serif}
+  .scan-diag .warn{color:var(--red)}
+  .scan-diag .good{color:var(--accent)}
+  .verdict{
+    background:linear-gradient(180deg,rgba(66,211,166,.12),rgba(66,211,166,.04));
+    border:1px solid rgba(66,211,166,.4);border-radius:13px;padding:13px 17px;margin-bottom:13px;
+    font-size:14px;line-height:1.75;
+  }
+  .verdict b{color:#8ff0d0;font-weight:700}
+  .verdict .sub{display:block;font-size:12.5px;color:#9db0c6;margin-top:4px}
+
+  /* 表格 */
+  .tb{width:100%;border-collapse:collapse;font-size:13px}
+  .tb th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);padding:8px 9px;border-bottom:1px solid var(--line);white-space:nowrap;letter-spacing:.4px}
+  .tb td{padding:9px 9px;border-bottom:1px solid #1b2438;vertical-align:middle}
+  .tb tr:hover td{background:rgba(255,255,255,.022)}
+  .tb .nmcell{font-weight:600;font-size:13.5px}
+  .tb .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tb .up{color:var(--accent);font-weight:600}
+  .tb .down{color:var(--red)}
+  .tb .tiny{font-size:11px;color:var(--dim)}
+  .tbwrap{max-height:620px;overflow-y:auto;margin-top:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}
+  .tbwrap::-webkit-scrollbar{width:9px}
+  .tbwrap::-webkit-scrollbar-thumb{background:#2c3c58;border-radius:5px}
+  .tbwrap::-webkit-scrollbar-track{background:transparent}
+
+  /* 筛选 chips */
+  .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .chip{
+    appearance:none;border:1px solid var(--line);background:var(--panel2);color:#b3c0d4;
+    font-family:inherit;font-size:12.5px;padding:6px 11px;border-radius:8px;cursor:pointer;transition:.14s;
+  }
+  .chip:hover{border-color:#3a4a68;color:#e6edf7}
+  .chip.on{border-color:rgba(66,211,166,.6);background:rgba(66,211,166,.12);color:#9bf0d5}
+
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}}
+
+  .empty{padding:40px 20px;text-align:center;color:var(--dim);font-size:13.5px;border:1px dashed var(--line);border-radius:12px}
+  .empty b{display:block;color:#b3c0d4;font-size:14px;margin-bottom:6px;font-weight:600}
+
+  .note{font-size:11.5px;color:var(--dim);line-height:1.85;margin-top:10px}
+
+  /* 英雄详情：出装/技能行 */
+  .sec{margin-top:13px}
+  .sec-h{font-size:12.5px;font-weight:600;color:#c3cfe0;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+  .sec-h::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--accent);display:block}
+  .sec-h i{font-style:normal;font-weight:400;color:var(--dim);font-size:11px}
+  .rhead,.rrow{display:flex;gap:10px;align-items:center;padding:8px 2px;font-size:13px}
+  .rhead{padding:0 2px 6px;font-size:10.5px;color:var(--dim);letter-spacing:.4px;border-bottom:1px solid var(--line)}
+  .rrow{border-bottom:1px solid #19223a}
+  .rrow:last-child{border-bottom:none}
+  .rname{flex:1;min-width:0;color:#dbe5f2;line-height:1.5}
+  .rname .rk{color:var(--dim);font-size:11px;margin-right:6px;font-variant-numeric:tabular-nums}
+  .rnum{width:60px;text-align:right;flex:0 0 auto;font-variant-numeric:tabular-nums;color:#b9c6d8;font-size:12.5px}
+  .rnum.up{color:var(--accent);font-weight:600}
+  .rnum.down{color:#c98a8a}
+  .rnum.dimval{color:#7c8ba0;font-weight:400}
+  .rnum.first{color:#e6edf7;font-weight:600}
+  /* 英雄页两栏 */
+  .cview{display:grid;grid-template-columns:412px minmax(0,1fr);gap:13px;align-items:start;margin-top:13px}
+  @media(max-width:1120px){.cview{grid-template-columns:1fr}}
+  .cside{display:flex;flex-direction:column;gap:13px;min-width:0}
+  .cmain{display:flex;flex-direction:column;gap:13px;min-width:0}
+
+  .champ-id{padding:15px 16px}
+  .cid-name{font-size:22px;font-weight:700;line-height:1.25;color:#f2f6fc}
+  .cid-sub{font-size:12px;color:var(--dim);margin-top:2px}
+  .cid-meta{display:flex;align-items:center;gap:7px;margin-top:9px}
+  .big2{display:flex;gap:9px;margin-top:11px}
+  .big2 .b{flex:1;background:rgba(255,255,255,.035);border:1px solid #1e2840;border-radius:9px;padding:8px 11px}
+  .big2 .b small{display:block;font-size:10.5px;color:var(--dim);margin-bottom:3px}
+  .big2 .b strong{font-size:19px;font-variant-numeric:tabular-nums;color:#e9f0fa;letter-spacing:.3px}
+  .cid-bal{margin-top:13px;padding-top:11px;border-top:1px solid #19223a}
+  .ballist{margin-top:6px}
+  .balrow{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;padding:4px 0;color:#b9c6d8}
+  .balrow b{font-variant-numeric:tabular-nums;font-weight:700}
+  .balrow .pos{color:#42d3a6}
+  .balrow .neg{color:#e07a7a}
+  .balnone{font-size:11.5px;color:#5d6b82;line-height:1.7;margin-top:5px}
+
+  .sidettl{font-size:12.5px;font-weight:600;color:#c3cfe0;margin-bottom:8px;
+    display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .sidettl::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--accent);display:block;flex:0 0 auto}
+  .sidettl i{font-style:normal;font-weight:400;color:var(--dim);font-size:11px}
+  .sidettl.big{font-size:14px}
+
+  .pickrow{display:flex;align-items:center;gap:5px;padding:6px 0;border-bottom:1px solid #19223a;font-size:12px}
+  .pickrow:last-child{border-bottom:none}
+  .pickrow.head{padding:0 0 5px;font-size:10.5px;color:var(--dim);border-bottom:1px solid var(--line);letter-spacing:.3px}
+  .pname{flex:1;min-width:0;color:#dbe5f2;line-height:1.45;word-break:break-word}
+  .pnum{width:46px;text-align:right;flex:0 0 auto;font-variant-numeric:tabular-nums;color:#b9c6d8}
+  .pnum.up{color:var(--accent);font-weight:600}
+  .pnum.down{color:#c98a8a}
+  .pnum.dimv{color:#7c8ba0}
+
+  .augpanel{padding:14px 16px}
+  .augbar{display:flex;flex-direction:column;gap:8px;margin:11px 0 13px}
+  .chiprow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .chiprow .lb{font-size:11px;color:var(--dim);width:30px;flex:0 0 auto}
+  .augbarfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:2px}
+  .augcount{font-size:11.5px;color:var(--dim)}
+  .augpanel .rhead{margin-top:2px}
+
+  .more-wrap{display:flex;justify-content:center;margin-top:11px}
+  .more-btn{
+    appearance:none;border:1px solid #33415c;background:transparent;color:#93a3ba;
+    font-family:inherit;font-size:12px;padding:7px 16px;border-radius:8px;cursor:pointer;transition:.15s;
+  }
+  .more-btn:hover{color:var(--accent);border-color:rgba(66,211,166,.45)}
+  .champ-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .champ-hd h3{font-size:17px;font-weight:700}
+  .champ-hd .sub{font-size:11.5px;color:var(--dim)}
+  .mtag{font-size:11px;padding:2px 8px;border-radius:9px;border:1px solid #33415c;color:#9aa9be;background:rgba(255,255,255,.03)}
+  .teamgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  @media(max-width:900px){.teamgrid{grid-template-columns:1fr}}
+  .trow{display:flex;align-items:center;gap:9px;padding:8px 2px;border-bottom:1px solid #19223a;cursor:pointer;transition:.12s}
+  .trow:last-child{border-bottom:none}
+  .trow:hover{background:rgba(255,255,255,.035)}
+  .tname{flex:1;min-width:0;font-size:13.5px;color:#dbe5f2;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .tname small{font-size:10.5px;color:#5d6b82;font-weight:400}
+  .tname em{font-style:normal;font-size:9.5px;color:#06231b;background:var(--accent);padding:1px 5px;border-radius:6px;font-weight:700}
+  .ttag{font-size:10.5px;color:#8494ab;border:1px solid #33415c;border-radius:8px;padding:1px 7px;white-space:nowrap;flex:0 0 auto}
+  .tnum{font-size:12px;color:#b9c6d8;font-variant-numeric:tabular-nums;width:50px;text-align:right;flex:0 0 auto}
+  .tnum.dimv{color:#5d6b82}
+  .tsum{font-size:11.5px;color:var(--dim);margin-top:9px;padding-top:9px;border-top:1px solid #19223a;line-height:1.8}
+  .dhead{font-size:14.5px;line-height:1.85;color:#e6edf7;padding:11px 14px;border-radius:9px;
+    background:rgba(255,255,255,.035);border-left:3px solid #3a4a68;margin-bottom:13px}
+  .dhead b{font-weight:700}
+  .dhead b.bad,.dline2 b.bad{color:#ff9c9c}
+  .dhead b.good,.dline2 b.good{color:var(--accent)}
+  .dhead b.warn,.dline2 b.warn{color:#f0c060}
+  .diag{display:flex;flex-direction:column;gap:10px}
+  .dline2{font-size:13px;line-height:1.8;color:#dbe5f2;padding-left:17px;position:relative}
+  .dline2::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:#5d6b82}
+  .dline2.warn::before{background:#f0b849;box-shadow:0 0 7px rgba(240,184,73,.6)}
+  .dline2.bad::before{background:#e07a7a;box-shadow:0 0 7px rgba(224,122,122,.6)}
+  .dline2.good::before{background:var(--accent)}
+  .dline2 b{color:#fff}
+  .col2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  .cb-name{color:#dbe5f2}
+  .cb-name .plus{color:#42536e;margin:0 6px}
+  .low-tag{font-size:9.5px;padding:1px 6px;border-radius:8px;background:rgba(240,184,73,.15);color:#e0b25a;border:1px solid rgba(240,184,73,.35);margin-left:6px;white-space:nowrap}
+  @media(max-width:820px){.col2{grid-template-columns:1fr}}
+  .note a{color:#5f8fb8}
+
+  .databar .dline{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:0 0 auto}
+  .dot.on{background:#42d3a6;box-shadow:0 0 7px rgba(66,211,166,.85)}
+  .dot.off{background:#5d6b82}
+  .dot.wait{background:#f0b849;animation:blip 1.2s ease-in-out infinite}
+  @keyframes blip{0%,100%{opacity:1}50%{opacity:.3}}
+  .dbar-btn{
+    appearance:none;border:1px solid #33415c;background:#16203300;color:#8494ab;
+    font-family:inherit;font-size:10.5px;padding:2px 8px;border-radius:6px;cursor:pointer;
+    margin-left:4px;transition:.15s;line-height:1.6;
+  }
+  .dbar-btn:hover{color:#42d3a6;border-color:rgba(66,211,166,.45)}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:#6a778c;line-height:1.9}
+  footer a{color:#5f8fb8;text-decoration:none;border-bottom:1px dotted #33415c}
+
+  /* 处境判断结果 */
+  .pickcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px 17px;margin-bottom:11px;position:relative;overflow:hidden}
+  .pickcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c,var(--accent))}
+  .pickcard h4{font-size:15px;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pickcard .why{font-size:13px;color:#b9c6d8;line-height:1.75;margin-bottom:9px}
+  .rel{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .relchip{
+    font-size:11.5px;padding:3px 9px;border-radius:7px;background:var(--panel2);
+    border:1px solid var(--line);color:#b3c0d4;cursor:default;white-space:nowrap;
+  }
+  .relchip b{color:var(--accent);font-weight:600}
+  .relchip:hover{border-color:#3a4a68}
+</style>
+<script>
+window.addEventListener('error', function(e){
+  var d = document.getElementById('__err');
+  if(!d){
+    d = document.createElement('div');
+    d.id = '__err';
+    d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#7a1f1f;color:#fff;padding:12px 16px;font:13px/1.6 system-ui;z-index:99999';
+    document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(d); });
+    if(document.body) document.body.appendChild(d);
+  }
+  d.textContent = '这个页面出错了，功能可能不完整：' + (e.message || e) + '（把这句话发给我就能修）';
+});
+</script>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="sigil">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 2.5 3.5 8v8L12 21.5 20.5 16V8L12 2.5Z" stroke="#42d3a6" stroke-width="1.3" stroke-linejoin="round" opacity=".5"/>
+          <path d="M12 6.6 7 10v4l5 3.4L17 14v-4l-5-3.4Z" fill="#42d3a6" opacity=".2"/>
+          <path d="M12 9.2 9.6 11v2l2.4 1.8L14.4 13v-2L12 9.2Z" fill="#f0b849"/>
+        </svg>
+      </div>
+      <h1>海克斯决策助手<small>海克斯大乱斗 · 三选一的时候切出来看一眼</small></h1>
+    </div>
+    <div class="databar">
+      <div class="dline" id="gameLine" style="display:none"><span class="dot off"></span><span id="gameText"></span></div>
+      <div class="dline" id="liveLine"><span class="dot wait"></span><span id="liveText">正在连接实时数据…</span></div>
+      <div class="dline" id="appLine"><span class="dot off"></span><span id="appText">程序</span></div>
+      <div class="dline">数据来自 <a href="https://aramkit.cn/zh-CN/augments" target="_blank" rel="noopener">ARAMKit</a> · 本工具只做整理与对比</div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab on" data-v="pick">三选一对比<span>最常用</span></button>
+    <button class="tab" data-v="champ">查我的英雄<span>这个英雄吃什么</span></button>
+    <button class="tab" data-v="team">双方阵容<span>谁能打谁</span></button>
+    <button class="tab" data-v="all">全部排行<span>全部海克斯</span></button>
+    <button class="tab" data-v="ctx">按处境判断<span>三个都不认识时</span></button>
+  </nav>
+
+  <!-- ===== 三选一 ===== -->
+  <section class="view on" id="view-pick">
+    <div class="card">
+      <div class="lbl"><b>第一步（可选）</b> 我在玩哪个英雄 <i>选了他才会告诉你「这个英雄用起来强不强」</i></div>
+      <div class="sw" id="champSearchWrap">
+        <input class="search" id="champInput" placeholder="输入英雄名，比如：亚索 / 莎弥拉 / 剑魔（不填也行）" autocomplete="off">
+        <div class="sug" id="champSug"></div>
+      </div>
+      <div id="champPicked" class="row" style="margin-top:9px"></div>
+    </div>
+
+    <div class="card">
+      <div class="lbl"><b>第二步</b> 游戏里弹出来的三个，填进来 <i>输入两三个字就能选</i></div>
+      <div class="slots" id="slots"></div>
+      <div class="scan-row">
+        <button class="scan-btn" id="scanBtn">识别游戏里的三个</button>
+        <button class="top-btn" id="topBtn" title="置顶后工具压在游戏上面，直接点识别，不用切窗口">窗口置顶</button>
+        <span class="scan-msg" id="scanMsg"></span>
+      </div>
+      <div class="hotkey-tip" id="hotkeyTip"></div>
+      <div class="scan-diag" id="scanDiag"></div>
+    </div>
+
+    <div id="cmpOut"></div>
+  </section>
+
+  <!-- ===== 查英雄 ===== -->
+  <section class="view" id="view-champ">
+    <div class="card">
+      <div class="lbl"><b>我在玩</b> 哪个英雄</div>
+      <div class="sw" id="champSearchWrap2">
+        <input class="search" id="champInput2" placeholder="输入英雄名，比如：亚索 / 莎弥拉 / 剑魔" autocomplete="off">
+        <div class="sug" id="champSug2"></div>
+      </div>
+    </div>
+    <div id="champOut"></div>
+  </section>
+
+  <!-- ===== 双方阵容 ===== -->
+  <section class="view" id="view-team">
+    <div id="teamOut"></div>
+  </section>
+
+  <!-- ===== 全部排行 ===== -->
+  <section class="view" id="view-all">
+    <div class="card">
+      <div class="sw" style="margin-bottom:11px">
+        <input class="search" id="allSearch" placeholder="搜海克斯名字，比如：剑 / 护盾 / 蜜蜂">
+      </div>
+      <div class="row" style="gap:14px">
+        <div class="row" style="gap:6px"><span class="lbl" style="margin:0">阶段</span><div class="chips" id="stageChips"></div></div>
+        <div class="row" style="gap:6px"><span class="lbl" style="margin:0">梯队</span><div class="chips" id="tierChips"></div></div>
+      </div>
+      <div class="note" id="allCount"></div>
+    </div>
+    <div class="tbwrap"><table class="tb"><thead><tr>
+      <th style="width:38px">#</th><th>海克斯</th><th style="width:52px">梯队</th>
+      <th style="width:74px">胜率</th><th style="width:74px">选取率</th><th style="width:110px">出现阶段</th>
+    </tr></thead><tbody id="allBody"></tbody></table></div>
+  </section>
+
+  <!-- ===== 按处境判断 ===== -->
+  <section class="view" id="view-ctx">
+    <div class="card">
+      <div class="note" style="margin:0 0 4px">这个页签不看具体名字，只看「你现在需要什么功能」。三个海克斯你一个都不认识的时候用它。</div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="lbl"><b>第几阶段</b> <i>决定哪些海克斯可能出现在你面前</i></div>
+        <div class="chips" id="ctxStage"></div>
+      </div>
+      <div class="card">
+        <div class="lbl"><b>你玩什么位</b></div>
+        <div class="chips" id="ctxRole"></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="lbl"><b>血线</b></div>
+        <div class="chips" id="ctxHp"></div>
+      </div>
+      <div class="card">
+        <div class="lbl"><b>局势</b></div>
+        <div class="chips" id="ctxTide"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="lbl"><b>队伍缺什么</b> <i>可多选，没有就不选</i></div>
+      <div class="chips" id="ctxGap"></div>
+    </div>
+    <div id="ctxOut"></div>
+  </section>
+
+  <footer>
+    数据来自 <a href="https://aramkit.cn/zh-CN/augments" target="_blank" rel="noopener">ARAMKit</a>（版本 v16.21，统计日 2026-10-25，样本 1505 万局），版权归其所有；本工具只做整理与三选一对比，不产出数据、不复算数据。
+    胜率是<b>全分段泛用数据</b>，不等于你这一局一定强；「收益率」= 用它的胜率 − 英雄自身胜率，更接近「这个英雄用它到底赚不赚」。样本偏小的条目（选取率低于 1%）胜率容易失真，别只看数字。<br>
+    双击 html 打开是<b>离线模式</b>（用文件里 2026-10-25 的快照）；双击「启动联网版.bat」打开是<b>实时模式</b>（每次打开自动去 ARAMKit 取最新排行，之后每 10 分钟自动续一次）。两种模式用的是同一个文件，服务不在就自动退回离线。<br>实时模式下只有「泛用胜率 / 梯队 / 选取率 / 出现阶段」会刷新；「对某个英雄的收益率」仍旧是 2026-10-25 的快照。不上传、不追踪，抓到的数据只留在你自己电脑上。
+  </footer>
+</div>
+
+<script>
+var DB=/*__DATA__*/;
+</script>
+<script>
+(function(){
+"use strict";
+
+/* ================= 数据索引 ================= */
+var A = DB.a, C = DB.c, N = DB.n || [];
+var bySlug = {}, champBySlug = {};
+A.forEach(function(a,i){ bySlug[a[1]] = i; });
+C.forEach(function(c){ champBySlug[c[0]] = c; });
+
+/* 英雄 -> {海克斯索引: 记录} */
+var champAug = {};
+C.forEach(function(c){
+  var m = {};
+  c[3].forEach(function(f){ m[f[0]] = { benefit:f[1], win:f[2], pick:f[3] }; });
+  champAug[c[0]] = m;
+});
+
+var RAR_NAME = { 3:"棱彩", 2:"黄金", 1:"白银", 0:"" };
+var TIER_ORDER = { S:0, A:1, B:2, C:3, D:4, "":5 };
+
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];
+  });
+}
+function pct(v){ return v == null ? "—" : (v.toFixed(1) + "%"); }
+function sign(v){ return v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(1) + "%"; }
+function tierHtml(t){ return '<span class="tier" data-t="' + esc(t) + '">' + (t || "—") + "</span>"; }
+function rarHtml(r){ return r ? '<span class="rar" data-r="' + r + '">' + RAR_NAME[r] + "</span>" : ""; }
+function stageText(st){
+  if(!st || !st.length) return '<span class="tiny">全部</span>';
+  return '<span class="tiny">' + st.map(function(x){ return x; }).join(" / ") + " 阶段</span>";
+}
+function augLink(slug){
+  return "https://aramkit.cn/zh-CN/augments/" + slug;
+}
+
+/* ================= 搜索 ================= */
+function searchAugs(q, limit){
+  q = (q || "").trim().toLowerCase();
+  if(!q) return [];
+  var out = [];
+  for(var i=0;i<A.length;i++){
+    if(A[i][0].toLowerCase().indexOf(q) >= 0 || A[i][1].indexOf(q) >= 0){ out.push(i); if(out.length >= (limit||8)) break; }
+  }
+  return out;
+}
+function searchChamps(q, limit){
+  q = (q || "").trim().toLowerCase();
+  if(!q) return [];
+  var out = [];
+  for(var i=0;i<C.length;i++){
+    var c = C[i];
+    var hay = (c[1] + " " + (c[2] || "") + " " + c[0]).toLowerCase();
+    if(hay.indexOf(q) >= 0){ out.push(c); if(out.length >= (limit||8)) break; }
+  }
+  return out;
+}
+function champLabel(c){ return c[2] ? c[2] : c[1]; }
+
+/* 游戏接口返回的英雄名可能是中文称号，也可能是英文标识，这里统一转成 slug */
+var CHAMP_BY_NAME = (function(){
+  var m = {};
+  C.forEach(function(c){
+    if(c[1]) m[c[1]] = c[0];
+    if(c[2]) m[c[2]] = c[0];
+    m[c[0]] = c[0];
+  });
+  return m;
+})();
+
+function resolveChamp(key){
+  if(!key) return null;
+  var k = String(key).trim();
+  if(CHAMP_BY_NAME[k]) return CHAMP_BY_NAME[k];
+  var low = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if(CHAMP_BY_NAME[low]) return CHAMP_BY_NAME[low];
+  /* 英文名再试一次：去掉常见后缀差异 */
+  var alt = low.replace(/monkeyking/, "wukong");
+  if(CHAMP_BY_NAME[alt]) return CHAMP_BY_NAME[alt];
+  return null;
+}
+
+var GAME_MODE_NAME = {
+  KIWI: "海克斯大乱斗", ARAM: "极地大乱斗", CHERRY: "斗魂竞技场",
+  CLASSIC: "经典模式", PRACTICETOOL: "训练模式", TUTORIAL: "新手教程"
+};
+
+/* 通用：绑定搜索建议 */
+function bindSuggest(inputEl, sugEl, onPick, finder){
+  function hide(){ sugEl.innerHTML = ""; }
+  function show(){
+    var q = inputEl.value;
+    if(!q.trim()){ hide(); return; }
+    var list = finder(q);
+    if(!list.length){ sugEl.innerHTML = '<div class="sug-list"><div class="sug-empty">没找到，换个字试试</div></div>'; return; }
+    var h = '<div class="sug-list">';
+    list.forEach(function(item){
+      h += '<div class="sug-item" data-k="' + item.key + '">' + item.html + '</div>';
+    });
+    sugEl.innerHTML = h + '</div>';
+    Array.prototype.forEach.call(sugEl.querySelectorAll(".sug-item"), function(el){
+      el.addEventListener("mousedown", function(e){
+        e.preventDefault();
+        onPick(el.getAttribute("data-k"));
+        hide();
+      });
+    });
+  }
+  inputEl.addEventListener("input", show);
+  inputEl.addEventListener("focus", show);
+  inputEl.addEventListener("blur", function(){ setTimeout(hide, 120); });
+  return { hide: hide };
+}
+
+/* ================= 三选一 ================= */
+var pickedChamp = null;
+var slots = [null, null, null];
+
+var slotWrap = document.getElementById("slots");
+(function buildSlots(){
+  var h = "";
+  for(var i=0;i<3;i++){
+    h += '<div class="slot">'
+      +  '<div class="idx">选项 ' + (i+1) + '</div>'
+      +  '<div class="sw"><input class="search" data-slot="' + i + '" placeholder="' + (i===0?"三个里第一个…":"再填一个（可以不填满）") + '" autocomplete="off">'
+      +  '<div class="sug" data-sug="' + i + '"></div></div>'
+      +  '<button class="clr" data-clr="' + i + '">×</button>'
+      +  "</div>";
+  }
+  slotWrap.innerHTML = h;
+})();
+
+function renderSlots(){
+  for(var i=0;i<3;i++){
+    var inp = slotWrap.querySelector('input[data-slot="' + i + '"]');
+    var btn = slotWrap.querySelector('.clr[data-clr="' + i + '"]');
+    if(!inp) continue;
+    if(slots[i] == null){ inp.value = ""; inp.classList.remove("filled"); btn.classList.remove("on"); }
+    else { inp.value = A[slots[i]][0]; inp.classList.add("filled"); btn.classList.add("on"); }
+  }
+}
+
+Array.prototype.forEach.call(slotWrap.querySelectorAll("input[data-slot]"), function(inp){
+  var i = parseInt(inp.getAttribute("data-slot"), 10);
+  var sug = slotWrap.querySelector('[data-sug="' + i + '"]');
+  bindSuggest(inp, sug, function(key){
+    slots[i] = parseInt(key, 10);
+    renderSlots();
+    renderCompare();
+    inp.blur();
+  }, function(q){
+    return searchAugs(q, 8).map(function(idx){
+      var a = A[idx];
+      return {
+        key: idx,
+        html: tierHtml(a[2]) + '<span class="nm">' + esc(a[0]) + '</span>'
+            + (a[5] ? rarHtml(a[5]) : '')
+            + '<span style="color:#b9c6d8;font-size:12px;font-variant-numeric:tabular-nums;flex:0 0 auto">' + pct(a[3]) + '</span>'
+      };
+    });
+  });
+  inp.addEventListener("input", function(){
+    if(slots[i] != null && A[slots[i]][0] !== inp.value){
+      slots[i] = null;
+      inp.classList.remove("filled");
+      slotWrap.querySelector('.clr[data-clr="' + i + '"]').classList.remove("on");
+      renderCompare();
+    }
+  });
+});
+
+slotWrap.addEventListener("click", function(e){
+  var b = e.target.closest(".clr");
+  if(!b) return;
+  var i = parseInt(b.getAttribute("data-clr"), 10);
+  slots[i] = null;
+  renderSlots(); renderCompare();
+});
+
+/* 英雄选择 */
+var champIn = document.getElementById("champInput");
+bindSuggest(champIn, document.getElementById("champSug"), function(slug){
+  pickedChamp = slug;
+  renderPicked();
+  renderCompare();
+}, function(q){
+  return searchChamps(q, 8).map(function(c){
+    return {
+      key: c[0],
+      html: '<span class="nm">' + esc(champLabel(c)) + '</span>'
+          + '<span style="font-size:11px;color:#5d6b82;flex:0 0 auto">' + esc(c[1]) + '</span>'
+    };
+  });
+});
+
+function renderPicked(){
+  var box = document.getElementById("champPicked");
+  if(!pickedChamp){ box.innerHTML = ""; return; }
+  var c = champBySlug[pickedChamp];
+  box.innerHTML = '<span class="chip on">' + esc(champLabel(c)) + ' <span style="opacity:.6;cursor:pointer" id="clearChamp">×</span></span>';
+  document.getElementById("clearChamp").addEventListener("click", function(){
+    pickedChamp = null; champIn.value = ""; renderPicked(); renderCompare();
+  });
+}
+
+/* 对比 */
+function renderCompare(){
+  var out = document.getElementById("cmpOut");
+  var idxs = slots.filter(function(s){ return s != null; });
+  if(!idxs.length){
+    out.innerHTML = '<div class="empty" style="margin-top:13px"><b>把游戏里那三个填进来</b>输入两三个字就能选，填完自动出结果。</div>';
+    return;
+  }
+
+  var cm = pickedChamp ? champAug[pickedChamp] : null;
+  var rows = idxs.map(function(i){
+    var a = A[i];
+    var fit = cm ? cm[i] : null;
+    return { i:i, a:a, fit:fit };
+  });
+
+  rows.sort(function(x, y){
+    var bx = x.fit ? x.fit.benefit : null, by = y.fit ? y.fit.benefit : null;
+    if(bx != null && by != null) return by - bx;
+    if(bx != null) return -1;
+    if(by != null) return 1;
+    return (y.a[3] || 0) - (x.a[3] || 0);
+  });
+
+  var best = rows[0];
+  var verdict;
+  if(pickedChamp && best.fit){
+    verdict = '<b>选「' + esc(best.a[0]) + '」</b>'
+      + '<span class="sub">' + esc(champLabel(champBySlug[pickedChamp])) + ' 用它胜率 ' + pct(best.fit.win)
+      + '，比这个英雄自己的平均胜率高 <b style="color:#8ff0d0">' + sign(best.fit.benefit) + '</b>。'
+      + (best.fit.pick != null && best.fit.pick < 1 ? '不过选取率只有 ' + pct(best.fit.pick) + '，可能是少数专精玩家拉高的，自己掂量。' : '')
+      + '</span>';
+  } else if(best.a[3] != null){
+    verdict = '<b>泛用角度选「' + esc(best.a[0]) + '」</b>'
+      + '<span class="sub">胜率 ' + pct(best.a[3]) + '，' + (best.a[2] || "无") + ' 梯队。'
+      + (pickedChamp ? '你的英雄（' + esc(champLabel(champBySlug[pickedChamp])) + '）没有它的专属数据，所以这里只能看泛用表现。' : '想要更准的话，上面选一下你的英雄。')
+      + '</span>';
+  } else {
+    verdict = '<b>这几个数据太少</b><span class="sub">样本不足，看下面的效果说明自己判断，或者用「按处境判断」定方向。</span>';
+  }
+
+  var h = '<div class="verdict">' + verdict + "</div>";
+
+  if(rows.length > 1 && rows[0].fit && rows[1].fit){
+    var d = rows[0].fit.benefit - rows[1].fit.benefit;
+    if(d < 1.2){
+      h += '<div class="verdict" style="background:rgba(240,184,73,.08);border-color:rgba(240,184,73,.3)">'
+        + '<b style="color:#f0c060">其实差距不大</b><span class="sub">前两名对你的英雄只差 ' + d.toFixed(1) + ' 个百分点，这种情况看效果挑更顺手的那个——'
+        + '能配合你出装和打法的，比数字上高 0.5% 更值。</span></div>';
+    }
+  }
+
+  h += '<div class="cmp">';
+  rows.forEach(function(r, k){
+    var a = r.a;
+    var isBest = (k === 0);
+    var id = "eff-" + k;
+    h += '<div class="cc ' + (isBest ? "best" : "") + '">'
+      +  '<div class="cc-top">' + tierHtml(a[2]) + rarHtml(a[5])
+      +    (isBest ? '<span class="cc-badge">推荐</span>' : '')
+      +  '</div>'
+      +  '<div class="cc-name">' + esc(a[0]) + '</div>'
+      +  '<div class="cc-stats">'
+      +    '<div class="st">泛用胜率<b>' + pct(a[3]) + '</b></div>'
+      +    '<div class="st">选取率<b>' + pct(a[4]) + '</b></div>'
+      +    (r.fit
+              ? '<div class="st">对' + esc(champLabel(champBySlug[pickedChamp])) + '<b class="' + (r.fit.benefit > 0 ? "up" : "down") + '">' + sign(r.fit.benefit) + '</b></div>'
+              : (pickedChamp ? '<div class="st">对这个英雄<b style="color:#5d6b82;font-size:12px">没数据</b></div>' : ''))
+      +  '</div>'
+      +  '<div class="cc-eff clamp" id="' + id + '">' + esc(a[8]) + '</div>'
+      +  '<span class="cc-more" data-more="' + id + '">展开效果</span>'
+      +  '<a class="cc-link" href="' + augLink(a[1]) + '" target="_blank" rel="noopener">在 ARAMKit 看详情 →</a>'
+      +  '</div>';
+  });
+  h += "</div>";
+
+  h += '<div class="note">胜率是全分段泛用数据；「对你的英雄」那一列才是排除了英雄强弱的真实收益。'
+    + '一局里三个都差不多的时候，优先选能和你现在装备、打法配合上的。</div>';
+
+  out.innerHTML = h;
+
+  Array.prototype.forEach.call(out.querySelectorAll("[data-more]"), function(el){
+    el.addEventListener("click", function(){
+      var t = document.getElementById(el.getAttribute("data-more"));
+      var open = t.classList.toggle("clamp");
+      el.textContent = open ? "展开效果" : "收起";
+    });
+  });
+}
+
+/* ================= 屏幕识别 ================= */
+var scanning = false;
+
+function setScanMsg(t, cls){
+  var e = document.getElementById("scanMsg");
+  if(!e) return;
+  e.textContent = t || "";
+  e.className = "scan-msg" + (cls ? " " + cls : "");
+}
+
+function canScan(){
+  return !!(window.pywebview && window.pywebview.api && window.pywebview.api.scan_screen);
+}
+
+/* 认不出来时把「这一帧到底看到了什么」摊开：截个图发过来就能定位 */
+function _esc(s){
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function showDiag(d){
+  var e = document.getElementById("scanDiag");
+  if(!e) return;
+  if(!d){ e.style.display = "none"; e.innerHTML = ""; return; }
+  var sz = d.size || [];
+  var texts = d.texts || [];
+  var shown = texts.slice(0, 6).join(" / ");
+  var rows = [];
+  rows.push("这一帧：<b>" + (sz[0] || "?") + "×" + (sz[1] || "?") + "</b> · 亮度 <b>"
+    + (d.bright == null ? "?" : d.bright) + "</b> · 检出文字块 <b>" + (d.boxes || 0)
+    + "</b> · 读到 <b>" + texts.length + "</b> 段 · 连看 <b>" + (d.frames || 1) + "</b> 帧");
+  rows.push("抓图时工具窗口：" + (d.pushed
+    ? '<span class="good">已自动让开（画面是游戏本身）</span>'
+    : '<span class="good">没挡着画面</span>')
+    + " · 游戏窗口：" + (d.raised
+    ? '<span class="good">已自动顶到最前</span>'
+    : '<span class="good">本来就在最前</span>'));
+  rows.push("读到的字：<b>" + (shown ? _esc(shown) : "（一个字都没读到）") + "</b>");
+  e.innerHTML = rows.join("<br>");
+  e.style.display = "block";
+}
+
+function applyHits(hits){
+  var sorted = hits.slice().sort(function(a, b){ return b.score - a.score; }).slice(0, 3);
+  var before = slots.slice();
+  for(var k = 0; k < 3; k++) slots[k] = (k < sorted.length) ? sorted[k].i : null;
+  renderSlots();
+  renderCompare();
+  var same = slots.every(function(s, i){ return s === before[i] && s !== null; });
+  applyHits.sameResult = same;
+}
+
+function fmtMs(ms){
+  ms = ms || 0;
+  return ms < 1000 ? ms + " ms" : (ms / 1000).toFixed(1) + " 秒";
+}
+
+function startScan(){
+  var btn = document.getElementById("scanBtn");
+  if(scanning) return;
+
+  if(!canScan()){
+    setScanMsg("这个功能只在桌面版（exe）里能用。网页版请手动输入。", "err");
+    return;
+  }
+
+  scanning = true;
+  if(btn){ btn.textContent = "正在认…"; btn.classList.add("on"); }
+  setScanMsg("抓取游戏画面…（工具窗口会暂时让开）");
+
+  function peek(d){
+    var t = d && d.texts ? d.texts.slice(0, 6).join(" / ") : "";
+    return t ? "（画面上读到的字：" + t + "）" : "";
+  }
+
+  function done(msg, cls, extra){
+    scanning = false;
+    if(btn){ btn.textContent = "识别游戏里的三个"; btn.classList.remove("on"); }
+    setScanMsg(msg + (extra ? " " + extra : ""), cls);
+  }
+
+  function handle(d){
+    if(d && d.ok && d.hits && d.hits.length >= 2){
+      applyHits(d.hits);
+      showDiag(null);
+      var tail = applyHits.sameResult ? " 跟刚才那三个一样——海克斯刷新了吗？" : "";
+      done("认到 " + d.hits.length + " 个 · " + fmtMs(d.burst_ms || d.ms) + "（连看 " + (d.frames || 1) + " 帧）", "ok", tail);
+    } else if(d && d.ok){
+      var why = d.texts && d.texts.length
+        ? "画面抓到了，但这些字里没有海克斯名——这会儿屏幕上可能真没在选牌。"
+        : "这一帧几乎没读到字——画面可能被别的窗口挡着。";
+      done("画面上没找到海克斯名字。" + why, "err", peek(d));
+      showDiag(d);
+    } else if(d && (d.reason === "no_game" || d.reason === "capture_failed") && !retried){
+      // 「找不到窗口 / 抓不到画面」多半是那一瞬间在切场景，自动再试一次再说
+      retried = true;
+      setTimeout(function(){ run(); }, 450);
+    } else if(d && d.reason === "no_game"){
+      showDiag(null);
+      done("没找到游戏窗口——在游戏里开一局再点。如果你确实在对局中，再点一次；还不行把下面诊断发我。", "err");
+    } else if(d && d.reason === "capture_failed"){
+      showDiag(null);
+      done("找到游戏窗口了，但这一刻抓不到画面（多半在切场景）。再点一次就好。", "err");
+    } else if(d && d.reason === "black_frame"){
+      showDiag(null);
+      done("抓到的是一片黑——游戏多半开的是「独占全屏」。视频设置里改成「无边框」就能抓到。", "err");
+    } else {
+      showDiag(null);
+      done("抓不到游戏画面：" + ((d && d.detail) || "先开一局再试"), "err");
+    }
+  }
+
+  var retried = false;
+  function run(){
+    window.pywebview.api.scan_screen(true, false).then(handle).catch(function(e){
+      done("识别出错：" + String(e), "err");
+    });
+  }
+
+  // 连拍在 Python 那边做，这边只发一次请求
+  setTimeout(function(){ if(scanning) done("这一次超时了，再点一下试试。", "err"); }, 15000);
+  run();
+}
+
+/* 全局热键：焦点留在游戏里，按一下就能认——不用切窗口 */
+window.setHotkey = function(vk){
+  var map = {0x77: "F8", 0x78: "F9", 0x76: "F6"};
+  var name = map[vk] || "";
+  var b = document.getElementById("scanBtn");
+  var t = document.getElementById("hotkeyTip");
+  if(t) t.textContent = name ? "也可以按 " + name + "（游戏拦按键时就用上面的按钮）" : "";
+  if(b && name) b.title = "也可以按 " + name;
+};
+
+window.hotkeyScan = function(d){
+  scanning = false;
+  var b = document.getElementById("scanBtn");
+  if(b){ b.textContent = "识别游戏里的三个"; b.classList.remove("on"); }
+  if(d && d.ok && d.hits && d.hits.length >= 2){
+    applyHits(d.hits);
+    showDiag(null);
+    setScanMsg("热键认到 " + d.hits.length + " 个 · " + fmtMs(d.burst_ms || d.ms), "ok");
+  } else {
+    setScanMsg("热键这一次没认到——卡片还在吗？", "err");
+    if(d) showDiag(d);
+  }
+};
+
+/* 窗口置顶：置顶之后工具压在游戏上面，点识别也不用切窗口 */
+var topOn = false;
+function toggleTop(btn){
+  if(!window.pywebview || !window.pywebview.api || !window.pywebview.api.set_on_top){
+    setScanMsg("置顶功能只在桌面版里能用", "err");
+    return;
+  }
+  var want = !topOn;
+  setScanMsg(want ? "正在置顶…" : "正在取消置顶…");
+  window.pywebview.api.set_on_top(want).then(function(r){
+    if(!r || !r.ok){
+      setScanMsg("置顶没成功。可以先把窗口拖到游戏画面边上，不影响识别。", "err");
+      return;
+    }
+    topOn = !!r.on_top;
+    if(btn){
+      btn.textContent = topOn ? "已置顶" : "窗口置顶";
+      btn.classList.toggle("on", topOn);
+    }
+    setScanMsg(topOn ? "已置顶，压着游戏也能识别。" : "", topOn ? "ok" : "");
+  }).catch(function(e){
+    setScanMsg("置顶出错：" + String(e), "err");
+  });
+}
+
+document.addEventListener("click", function(e){
+  var t = e.target;
+  if(!t) return;
+  if(t.id === "scanBtn") startScan();
+  else if(t.id === "topBtn") toggleTop(t);
+});
+
+/* ================= 双方阵容 ================= */
+var TAGC = { Tank:"坦克", Fighter:"战士", Mage:"法师", Marksman:"射手", Assassin:"刺客", Support:"辅助" };
+var TAGMAP = DB.tag || {};
+var _teamSig = "";
+
+function champTags(slug){ return TAGMAP[slug] || []; }
+function champMeta(slug){
+  var c = champBySlug[slug];
+  return (c && c[4]) ? c[4] : null;
+}
+function champNameOf(slug, fallback){
+  var c = champBySlug[slug];
+  return c ? champLabel(c) : (fallback || slug || "?");
+}
+
+function teamAgg(list){
+  var st = { front:0, tank:0, ad:0, ap:0, assn:0, ranged:0, wins:[], lvs:[] };
+  list.forEach(function(p){
+    var t = champTags(p.key), prim = t[0] || "";
+    if(prim === "Tank") st.tank++;
+    if(prim === "Tank" || prim === "Fighter") st.front++;
+    if(prim === "Marksman" || prim === "Assassin" || prim === "Fighter") st.ad++;
+    if(prim === "Mage" || prim === "Support") st.ap++;
+    if(prim === "Assassin") st.assn++;
+    if(prim === "Marksman" || prim === "Mage" || prim === "Support") st.ranged++;
+    var m = champMeta(p.key);
+    if(m && m[2] != null) st.wins.push(m[2]);
+    if(p.level) st.lvs.push(p.level);
+  });
+  function avg(a){ return a.length ? a.reduce(function(x,y){return x+y;},0)/a.length : null; }
+  st.avgWin = avg(st.wins);
+  st.avgLv = avg(st.lvs);
+  return st;
+}
+
+function topByWin(list){
+  var best = null;
+  list.forEach(function(p){
+    var m = champMeta(p.key);
+    if(!m || m[2] == null) return;
+    if(!best || m[2] > best.win) best = { p:p, win:m[2], tier:m[0] };
+  });
+  return best;
+}
+
+function diagnose(my, foe, myList, foeList){
+  var items = [];
+  function add(c, t){ items.push({ c:c, t:t }); }
+
+  var wd = (my.avgWin != null && foe.avgWin != null) ? (foe.avgWin - my.avgWin) : null;
+  var fd = my.front - foe.front;
+
+  /* ---- 一句话结论 ---- */
+  var head;
+  if(wd != null && wd >= 1.2 && fd <= -2)
+    head = '<b class="bad">你们整体偏弱，前排也不够。</b>前期躲着打，把等级和经济熬住，靠海克斯翻。';
+  else if(wd != null && wd >= 1.2)
+    head = '<b class="bad">对面整体强度更高。</b>别主动接团，等他们把技能交完再打。';
+  else if(wd != null && wd <= -1.2 && fd >= 1)
+    head = '<b class="good">你们又强又有前排。</b>直接推，别给他们拖到后期。';
+  else if(wd != null && wd <= -1.2)
+    head = '<b class="good">你们整体强度更高。</b>主动找架打，把优势滚起来。';
+  else if(fd <= -2)
+    head = '<b class="warn">两边强度差不多，但你们前排差得远。</b>正面对拼吃亏，尽量靠拉扯和远程消耗。';
+  else if(fd >= 2)
+    head = '<b class="good">两边强度差不多，但你们前排更硬。</b>敢往前压，把团战拖成贴身混战。';
+  else
+    head = '两边整体接近。<b>这局输赢主要看海克斯选得对不对。</b>';
+
+  /* ---- 具体条目 ---- */
+  if(fd <= -2) add("bad", "你们前排（坦克+战士）<b>" + my.front + " 个</b>，对面 " + foe.front + " 个。没人顶在前面，输出位拿再多伤害也打不出来。");
+  else if(fd === -1) add("warn", "前排你们 <b>" + my.front + " 个</b>，对面 " + foe.front + " 个。就少这一个，正面每次都要让半步——团战别抢第一波。");
+  else if(fd >= 2) add("good", "你们前排 <b>" + my.front + " 个</b>，对面只有 " + foe.front + " 个。推得动，输出位可以放心堆伤害。");
+
+  if(foe.tank >= 2) add("warn", "对面 <b>" + foe.tank + " 个坦克</b>。纯伤害会被护甲魔抗吃掉——物理输出优先穿透，法系优先法穿，百分比伤害最划算。");
+  if(foe.assn >= 2) add("warn", "对面 <b>" + foe.assn + " 个刺客</b>。你是后排就别站第二排，位移/保命类比多点伤害值。");
+  else if(foe.assn === 1 && my.ranged >= 3) add("warn", "对面有刺客（" + (function(){ var t = foeList.filter(function(x){ return (champTags(x.key)[0] === "Assassin"); })[0]; return t ? esc(champNameOf(t.key, t.champion)) : "刺客"; })() + "），你们远程又多。谁被他切到谁就废，站位比海克斯更重要。");
+
+  if(my.assn === 0 && my.ranged >= 4) add("warn", "你们 <b>全是远程，没人能开团</b>。谁先手谁赢的局，机制类里带位移或控制的优先。");
+  if(my.front >= 3 && foe.ranged >= 3) add("good", "你们近战多、对面远程多。<b>贴上去就是赢</b>，别在远处跟他们对射。");
+  if(my.ad >= 4 && my.ap <= 1) add("warn", "你们 <b>几乎全物理</b>。对面只要堆护甲就很难打，海克斯优先拿能转法系或打百分比的。");
+  if(my.ap >= 4 && my.ad <= 1) add("warn", "你们 <b>几乎全法术</b>。对面堆魔抗就难受，优先穿透或补物理伤害。");
+
+  if(my.avgLv != null && foe.avgLv != null){
+    var dl = my.avgLv - foe.avgLv;
+    if(dl >= 1.5) add("good", "你们平均等级高 <b>" + dl.toFixed(1) + " 级</b>。现在是最强的时候，抓紧打。");
+    else if(dl <= -1.5) add("bad", "你们平均等级低 <b>" + (-dl).toFixed(1) + " 级</b>。现在最弱，缩着等下一轮。");
+  }
+
+  var ft = topByWin(foeList), mt = topByWin(myList);
+  if(ft) add("", "对面最需要盯的是 <b>" + esc(champNameOf(ft.p.key, ft.p.champion)) + "</b>（"
+    + (ft.tier ? ft.tier + " · " : "") + pct(ft.win) + "）。他一旦被喂起来，这局会很难收。");
+  if(mt && (!ft || mt.win < ft.win - 0.3)) add("", "你们主要靠 <b>" + esc(champNameOf(mt.p.key, mt.p.champion)) + "</b>（"
+    + (mt.tier ? mt.tier + " · " : "") + pct(mt.win) + "）打。团战先保住他，别让他第一个倒。");
+
+  if(!items.length) add("", "两边阵容没什么明显短板，按英雄强弱选就行。");
+  return { head: head, items: items.slice(0, 6) };
+}
+
+function teamRow(p){
+  var meta = champMeta(p.key);
+  var tags = champTags(p.key);
+  var prim = tags[0] ? TAGC[tags[0]] : "未知";
+  var me = p.me ? '<em>我</em>' : "";
+  var dead = p.dead ? '<em style="background:#e07a7a;color:#1a0a0a">阵亡</em>' : "";
+  var win = (meta && meta[2] != null)
+    ? '<span class="tnum">' + pct(meta[2]) + '</span>'
+    : '<span class="tnum dimv">—</span>';
+  var tier = (meta && meta[0]) ? tierHtml(meta[0]) : "";
+  var cc = champBySlug[p.key];
+  var sub = (cc && cc[2] && cc[1] && cc[1] !== cc[2])
+    ? '<small>' + esc(cc[1]) + '</small>' : '';
+  return '<div class="trow" data-t="' + esc(p.key) + '">'
+    + '<span class="tname">' + esc(champNameOf(p.key, p.champion)) + sub + me + dead + '</span>'
+    + tier
+    + '<span class="ttag">' + esc(prim) + '</span>'
+    + win
+    + '<span class="tnum dimv">' + (p.level || "?") + '级</span>'
+    + '</div>';
+}
+
+function teamCard(titleCn, list, agg, isMine){
+  var h = '<div class="card"><div class="sec-h">' + titleCn
+    + ' <i>' + list.length + ' 人 · 平均胜率 ' + (agg.avgWin != null ? pct(agg.avgWin) : "—")
+    + '</i></div>';
+  h += list.map(teamRow).join("");
+  h += '<div class="tsum">前排（坦克+战士）<b>' + agg.front + '</b> 个 · 坦克 <b>' + agg.tank
+    + '</b> · 物理倾向 <b>' + agg.ad + '</b> · 法术倾向 <b>' + agg.ap
+    + '</b>' + (agg.avgLv != null ? ' · 平均等级 <b>' + agg.avgLv.toFixed(1) + '</b>' : '') + '</div>';
+  h += '</div>';
+  return h;
+}
+
+function renderTeam(force){
+  var out = document.getElementById("teamOut");
+  if(!out) return;
+
+  if(!hasDesktop()){
+    out.innerHTML = '<div class="card"><div class="empty"><b>阵容分析要在桌面版（exe）里用</b>'
+      + '它读的是游戏客户端自己开的一个本地接口。网页版拿不到这个数据，不是没做。</div></div>';
+    return;
+  }
+
+  if(!GAME || !GAME.players || !GAME.players.length){
+    out.innerHTML = '<div class="card"><div class="empty"><b>现在没有进行中的对局</b>'
+      + '开一局之后，这里会自动显示双方十个人的阵容、强弱对比和该注意什么。'
+      + '对局中每 5 秒自动刷新。</div></div>';
+    return;
+  }
+
+  var sig = GAME.players.map(function(p){
+    return p.key + p.team + p.level + (p.dead ? 1 : 0);
+  }).join(",");
+  if(!force && sig === _teamSig) return;
+  _teamSig = sig;
+
+  var mine = [], foe = [];
+  GAME.players.forEach(function(p){ (p.mine ? mine : foe).push(p); });
+  function byWin(a, b){
+    if(a.me) return -1;
+    if(b.me) return 1;
+    var x = champMeta(a.key), y = champMeta(b.key);
+    return ((y && y[2]) || 0) - ((x && x[2]) || 0);
+  }
+  mine.sort(byWin); foe.sort(byWin);
+
+  var am = teamAgg(mine), af = teamAgg(foe);
+  var h = '<div class="card"><div class="note" style="margin:0">'
+    + '这是从游戏客户端读到的<b>实时阵容</b>（每 5 秒刷新）。胜率是该英雄在海克斯大乱斗的整体胜率，'
+    + '定位标签来自拳头官方分类，只是大致方向——战士里也有靠法伤的。'
+    + '</div></div>';
+
+  h += '<div class="teamgrid">';
+  h += teamCard("我方", mine, am, true);
+  h += teamCard("对方", foe, af, false);
+  h += '</div>';
+
+  var dg = diagnose(am, af, mine, foe);
+  h += '<div class="card"><div class="sec-h">阵容诊断 <i>按双方阵容推的，不是胜负预测</i></div>';
+  h += '<div class="dhead">' + dg.head + '</div><div class="diag">';
+  dg.items.forEach(function(d){
+    h += '<div class="dline2 ' + d.c + '">' + d.t + '</div>';
+  });
+  h += '</div>';
+  h += '<div class="note">点上面任意一个英雄，直接跳到他的专属页面（适配海克斯、出装、技能、召唤师技能）。</div></div>';
+
+  out.innerHTML = h;
+}
+
+/* 英雄页里的筛选与展开 */
+var _curChamp = "";
+
+document.addEventListener("input", function(e){
+  if(e.target && e.target.id === "augSearch"){
+    if(!_curChamp || !champBySlug[_curChamp]) return;
+    cstOf(_curChamp).q = e.target.value;
+    renderAugList(_curChamp);
+  }
+});
+
+function _markGroup(btn, attr){
+  var row = btn.parentNode;
+  if(!row) return;
+  Array.prototype.forEach.call(row.querySelectorAll("[" + attr + "]"), function(b){
+    b.classList.toggle("on", b === btn);
+  });
+}
+
+document.addEventListener("click", function(e){
+  var t = e.target;
+  if(!t || !t.getAttribute) return;
+
+  if(t.hasAttribute("data-rar") && _curChamp && champBySlug[_curChamp]){
+    cstOf(_curChamp).rar = +t.getAttribute("data-rar");
+    _markGroup(t, "data-rar");
+    renderAugList(_curChamp);
+    return;
+  }
+  if(t.hasAttribute("data-stage") && _curChamp && champBySlug[_curChamp]){
+    cstOf(_curChamp).stage = +t.getAttribute("data-stage");
+    _markGroup(t, "data-stage");
+    renderAugList(_curChamp);
+    return;
+  }
+  if(t.id === "augReset" && _curChamp && champBySlug[_curChamp]){
+    var st = cstOf(_curChamp);
+    st.q = ""; st.rar = 0; st.stage = 0; st.all = true;
+    renderChampView(_curChamp);
+    return;
+  }
+  if(t.id === "augMore" && _curChamp && champBySlug[_curChamp]){
+    var st2 = cstOf(_curChamp);
+    st2.all = !st2.all;
+    renderAugList(_curChamp);
+    return;
+  }
+
+  var row = e.target && e.target.closest ? e.target.closest(".trow") : null;
+  if(!row) return;
+  var slug = row.getAttribute("data-t");
+  if(!slug || !champBySlug[slug]) return;
+  pickedChamp = slug;
+  champIn.value = champLabel(champBySlug[slug]);
+  var ci2 = document.getElementById("champInput2");
+  if(ci2) ci2.value = champLabel(champBySlug[slug]);
+  renderPicked();
+  renderCompare();
+  renderChampView(slug);
+  switchTab("champ");
+});
+
+/* ================= 查英雄 ================= */
+var champIn2 = document.getElementById("champInput2");
+bindSuggest(champIn2, document.getElementById("champSug2"), function(slug){
+  pickedChamp = slug;
+  champIn.value = champLabel(champBySlug[slug]);
+  renderPicked();
+  renderChampView(slug);
+  renderCompare();
+}, function(q){
+  return searchChamps(q, 8).map(function(c){
+    return {
+      key: c[0],
+      html: '<span class="nm">' + esc(champLabel(c)) + '</span>'
+          + '<span style="font-size:11px;color:#5d6b82;flex:0 0 auto">' + esc(c[1]) + '</span>'
+    };
+  });
+});
+
+function namesOf(ids){
+  return String(ids).split(/[|+]/).map(function(x){
+    if(x === "") return "";
+    var n = N[+x];
+    return (n === undefined || n === null) ? "?" : n;
+  }).filter(function(x){ return x; });
+}
+
+function rhead(){
+  return '<div class="rhead"><span class="rname">名称</span>'
+    + '<span class="rnum">胜率</span><span class="rnum">选取率</span><span class="rnum">收益率</span></div>';
+}
+
+function rrow(rank, nameHtml, win, pick, bene, isFirst, dimColor){
+  var tone = dimColor ? 'dimval' : (bene > 0 ? 'up' : (bene < 0 ? 'down' : ''));
+  return '<div class="rrow">'
+    + '<span class="rname">' + (rank ? '<span class="rk">' + rank + '</span>' : '') + nameHtml + '</span>'
+    + '<span class="rnum' + (isFirst ? ' first' : '') + '">' + pct(win) + '</span>'
+    + '<span class="rnum">' + pct(pick) + '</span>'
+    + '<span class="rnum ' + tone + '">' + sign(bene) + '</span>'
+    + '</div>';
+}
+
+var AUG_FIRST = 30;
+var _cst = {};          // 每个英雄各自的筛选状态
+
+function cstOf(slug){
+  if(!_cst[slug]) _cst[slug] = { q:"", rar:0, stage:0, all:true };
+  return _cst[slug];
+}
+
+/* ---------- 小部件 ---------- */
+function chipRow(label, items, cur, attr){
+  var h = '<div class="chiprow"><span class="lb">' + label + '</span>';
+  items.forEach(function(it){
+    h += '<button class="chip' + (it.v === cur ? ' on' : '') + '" ' + attr + '="' + it.v + '">' + it.n + '</button>';
+  });
+  return h + '</div>';
+}
+
+function balHtml(slug){
+  var rows = (DB.bal || {})[slug] || [];
+  if(!rows.length) return '<div class="balnone">这个英雄没有任何调整——伤害和治疗都是 100%。</div>';
+  var h = '<div class="ballist">';
+  rows.forEach(function(r){
+    var v = String(r[1]);
+    var cls = v.charAt(0) === "-" ? "neg" : "pos";
+    h += '<div class="balrow"><span>' + esc(r[0]) + '</span><b class="' + cls + '">' + esc(v) + '</b></div>';
+  });
+  return h + '</div>';
+}
+
+function pickRow(nameHtml, win, pick, bene){
+  return '<div class="pickrow">'
+    + '<span class="pname">' + nameHtml + '</span>'
+    + '<span class="pnum">' + pct(win) + '</span>'
+    + '<span class="pnum dimv">' + pct(pick) + '</span>'
+    + '<span class="pnum ' + (bene > 0 ? "up" : (bene < 0 ? "down" : "dimv")) + '">' + sign(bene) + '</span>'
+    + '</div>';
+}
+
+function pickHead(){
+  return '<div class="pickrow head"><span class="pname">名称</span>'
+    + '<span class="pnum">胜率</span><span class="pnum">选取率</span><span class="pnum">收益率</span></div>';
+}
+
+/* ---------- 左侧：英雄信息 ---------- */
+function sideCards(c){
+  var slug = c[0], meta = c[4], ex = c[5] || [];
+  var h = '';
+
+  /* 头部 */
+  h += '<div class="card champ-id">';
+  h += '<div class="cid-name">' + esc(champLabel(c)) + '</div>';
+  h += '<div class="cid-sub">' + esc(c[1] || "") + '</div>';
+  h += '<div class="cid-meta">';
+  if(meta){
+    h += tierHtml(meta[0]) + '<span class="mtag">#' + meta[1] + '</span>';
+  }
+  h += '</div>';
+  if(meta){
+    h += '<div class="big2">'
+      + '<div class="b"><small>胜率</small><strong>' + pct(meta[2]) + '</strong></div>'
+      + '<div class="b"><small>选取率</small><strong>' + pct(meta[3]) + '</strong></div>'
+      + '</div>';
+  }
+  h += '<div class="cid-bal"><div class="sidettl">海克斯大乱斗调整</div>' + balHtml(slug) + '</div>';
+  h += '<div class="note" style="margin-top:8px">收益率 = 用它的胜率 − 这个英雄自己的平均胜率。正数才是真赚。</div>';
+  h += '</div>';
+
+  /* 最优核心出装 */
+  var core = ex[2] || [];
+  if(core.length){
+    h += '<div class="card"><div class="sidettl">最优核心出装 <i>' + core.length + ' 种</i></div>' + pickHead();
+    core.slice(0, 4).forEach(function(r, k){
+      h += pickRow(namesOf(r[0]).join(' <span style="color:#42536e">+</span> '), r[1], r[2], r[3]);
+    });
+    h += '</div>';
+  }
+
+  /* 召唤师技能 */
+  var sm = ex[0] || [];
+  if(sm.length){
+    h += '<div class="card"><div class="sidettl">最优召唤师技能 <i>' + sm.length + ' 组</i></div>' + pickHead();
+    sm.slice(0, 5).forEach(function(r){
+      h += pickRow(namesOf(r[0]).join(' <span style="color:#42536e">+</span> '), r[1], r[2], r[3]);
+    });
+    h += '</div>';
+  }
+
+  /* 技能加点 */
+  var sk = ex[1] || [];
+  if(sk.length){
+    h += '<div class="card"><div class="sidettl">技能加点 <i>前者优先</i></div>' + pickHead();
+    sk.forEach(function(r){
+      h += pickRow('<b style="letter-spacing:1.5px">' + esc(r[0]) + '</b>', r[1], r[2], r[3]);
+    });
+    h += '</div>';
+  }
+
+  /* 装备细项 */
+  function itemCard(title, idx, hint){
+    var rows = ex[idx] || [];
+    if(!rows.length) return "";
+    var t = '<div class="card"><div class="sidettl">' + title + (hint ? ' <i>' + hint + '</i>' : '') + '</div>' + pickHead();
+    rows.slice(0, 6).forEach(function(r){
+      t += pickRow(namesOf(r[0]).join(' <span style="color:#42536e">+</span> '), r[1], r[2], r[3]);
+    });
+    return t + '</div>';
+  }
+  h += itemCard("出门装", 3, "");
+  h += itemCard("鞋子", 4, "");
+  h += itemCard("后续成装", 5, "");
+  h += itemCard("单件装备", 6, "");
+
+  return h;
+}
+
+/* ---------- 右侧：海克斯面板 ---------- */
+function augPanel(c){
+  var st = cstOf(c[0]);
+  var h = '<div class="card augpanel">';
+  h += '<div class="sidettl big">适配海克斯 <i id="augTotal"></i></div>';
+  h += '<div class="augbar">';
+  h += '<input class="search" id="augSearch" placeholder="搜海克斯名字，比如：剑 / 龙 / 手" autocomplete="off" value="' + esc(st.q) + '">';
+  h += chipRow("类型", [{v:0,n:"全部"},{v:3,n:"棱彩"},{v:2,n:"黄金"},{v:1,n:"白银"}], st.rar, "data-rar");
+  h += chipRow("阶段", [{v:0,n:"全部阶段"},{v:1,n:"阶段 1"},{v:2,n:"阶段 2"},{v:3,n:"阶段 3"},{v:4,n:"阶段 4"}], st.stage, "data-stage");
+  h += '<div class="augbarfoot"><span class="augcount" id="augCount"></span>'
+    +  '<button class="more-btn" id="augReset">重置筛选</button></div>';
+  h += '</div>';
+  h += '<div id="augList"></div>';
+  h += '</div>';
+  return h;
+}
+
+function filteredAugs(c){
+  var st = cstOf(c[0]);
+  var all = (c[3] || []).slice().sort(function(x, y){ return (y[1] || 0) - (x[1] || 0); });
+  var q = (st.q || "").trim();
+  return all.filter(function(f){
+    var a = A[f[0]];
+    if(!a) return false;
+    if(st.rar && a[5] !== st.rar) return false;
+    if(st.stage && (a[6] || []).indexOf(st.stage) < 0) return false;
+    if(q && a[0].indexOf(q) < 0) return false;
+    return true;
+  });
+}
+
+function renderAugList(slug){
+  var box = document.getElementById("augList");
+  var cntEl = document.getElementById("augCount");
+  var totEl = document.getElementById("augTotal");
+  if(!box) return;
+  var c = champBySlug[slug];
+  if(!c) return;
+
+  var st = cstOf(slug);
+  var total = (c[3] || []).length;
+  var list = filteredAugs(c);
+
+  if(totEl) totEl.textContent = "共 " + total + " 条";
+  if(cntEl){
+    var filtering = (st.rar || st.stage || (st.q || "").trim());
+    var shownN = st.all ? list.length : Math.min(list.length, AUG_FIRST);
+    cntEl.innerHTML = (filtering ? '筛出 <b style="color:#e6edf7">' + list.length + '</b> 条 / 共 '
+                                 : '显示 <b style="color:#e6edf7">' + shownN + '</b> 条 / 共 ') + total + ' 条';
+  }
+
+  if(!list.length){
+    box.innerHTML = '<div class="empty" style="margin-top:6px">这个条件下没有海克斯。换个筛选，或者点「重置筛选」。</div>';
+    return;
+  }
+
+  var shown = st.all ? list : list.slice(0, AUG_FIRST);
+  var h = rhead();
+  shown.forEach(function(f, k){
+    var a = A[f[0]];
+    h += rrow(k + 1,
+      esc(a[0]) + (a[5] ? ' ' + rarHtml(a[5]) : ''),
+      f[2], f[3], f[1], k === 0);
+  });
+  if(list.length > AUG_FIRST){
+    h += '<div class="more-wrap"><button class="more-btn" id="augMore">'
+      + (st.all ? '太长了，只看前 ' + AUG_FIRST + ' 条' : '展开剩下的 ' + (list.length - AUG_FIRST) + ' 条')
+      + '</button></div>';
+  }
+  box.innerHTML = h;
+}
+
+/* ---------- 组合 ---------- */
+function combosCard(c){
+  var combos = c[6] || [];
+  if(!combos.length) return "";
+  var h = '<div class="card"><div class="sidettl">海克斯组合 <i>两个一起拿的胜率 · 样本通常很少</i></div>' + rhead();
+  combos.forEach(function(r, k){
+    var an = A[r[0]] ? A[r[0]][0] : "?";
+    var bn = A[r[1]] ? A[r[1]][0] : "?";
+    var label = '<span class="cb-name">' + esc(an) + '</span><span class="plus">+</span>'
+      + '<span class="cb-name">' + esc(bn) + '</span>'
+      + (r[5] ? '<span class="low-tag">样本少</span>' : '');
+    h += rrow(k + 1, label, r[2], r[3], r[4], k === 0, !!r[5]);
+  });
+  h += '<div class="note">组合的选取率普遍在 0.0%~0.1%，也就是几百场里才出现几次。胜率高往往是"少数人这么拿且赢了"，'
+    + '<b>不要当成通用结论</b>。带「样本少」标记的尤其别当真。</div></div>';
+  return h;
+}
+
+/* ---------- 主体 ---------- */
+function renderChampView(slug){
+  var c = champBySlug[slug];
+  var out = document.getElementById("champOut");
+  if(!c){ out.innerHTML = ""; return; }
+
+  var h = '<div class="cview">';
+  h += '<aside class="cside">' + sideCards(c) + '</aside>';
+  h += '<main class="cmain">';
+  h += augPanel(c);
+  h += combosCard(c);
+  h += '<div class="note">这些数据是 ARAMKit v16.21 / ' + esc(DB.d) + ' 的快照。'
+    + '实时刷新只覆盖「全部排行」里的泛用胜率，这里的历史数据不会变。</div>';
+  h += '</main></div>';
+
+  out.innerHTML = h;
+  _curChamp = slug;
+  renderAugList(slug);
+}
+
+/* ================= 全部排行 ================= */
+var allState = { q:"", stage:0, tier:"" };
+(function(){
+  var sc = document.getElementById("stageChips");
+  var h = '<button class="chip on" data-stage="0">全部</button>';
+  for(var i=1;i<=4;i++) h += '<button class="chip" data-stage="' + i + '">' + i + '</button>';
+  sc.innerHTML = h;
+  var tc = document.getElementById("tierChips");
+  var h2 = '<button class="chip on" data-tier="">全部</button>';
+  ["S","A","B","C","D"].forEach(function(t){ h2 += '<button class="chip" data-tier="' + t + '">' + t + '</button>'; });
+  tc.innerHTML = h2;
+
+  sc.addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    Array.prototype.forEach.call(sc.querySelectorAll(".chip"), function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    allState.stage = parseInt(b.getAttribute("data-stage"), 10);
+    renderAll();
+  });
+  tc.addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    Array.prototype.forEach.call(tc.querySelectorAll(".chip"), function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    allState.tier = b.getAttribute("data-tier");
+    renderAll();
+  });
+  document.getElementById("allSearch").addEventListener("input", function(e){
+    allState.q = e.target.value;
+    renderAll();
+  });
+})();
+
+function renderAll(){
+  var q = (allState.q || "").trim().toLowerCase();
+  var body = document.getElementById("allBody");
+  var arr = [];
+  for(var i=0;i<A.length;i++){
+    var a = A[i];
+    if(allState.stage && a[6].indexOf(allState.stage) < 0) continue;
+    if(allState.tier && a[2] !== allState.tier) continue;
+    if(q && a[0].toLowerCase().indexOf(q) < 0 && a[1].indexOf(q) < 0) continue;
+    arr.push(a);
+  }
+  arr.sort(function(x, y){
+    var tx = TIER_ORDER[x[2]] != null ? TIER_ORDER[x[2]] : 5;
+    var ty = TIER_ORDER[y[2]] != null ? TIER_ORDER[y[2]] : 5;
+    if(tx !== ty) return tx - ty;
+    return (y[3] || 0) - (x[3] || 0);
+  });
+  var h = "";
+  arr.forEach(function(a, k){
+    h += '<tr>'
+      + '<td class="tiny">' + (k+1) + '</td>'
+      + '<td class="nmcell">' + esc(a[0]) + ' ' + rarHtml(a[5]) + '</td>'
+      + '<td>' + tierHtml(a[2]) + '</td>'
+      + '<td class="num">' + pct(a[3]) + '</td>'
+      + '<td class="num ' + ((a[4] || 0) < 1 ? "tiny" : "") + '">' + pct(a[4]) + '</td>'
+      + '<td>' + stageText(a[6]) + '</td>'
+      + '</tr>';
+  });
+  body.innerHTML = h || '<tr><td colspan="6" style="padding:30px;text-align:center;color:#5d6b82">没有符合条件的</td></tr>';
+  document.getElementById("allCount").textContent = "当前显示 " + arr.length + " 条 / 共 " + A.length + " 条";
+}
+
+/* ================= 按处境判断 ================= */
+var ctx = { stage:1, role:"mage", hp:"healthy", tide:"even", gaps:[] };
+
+var TYPE_DEF = [
+  { id:"power", name:"数值战力类", color:"#ff8a8a", kw:[
+      ["攻击力",3],["法术强度",3],["技能急速",3],["攻击速度",3],["暴击",3],
+      ["技能伤害",3],["穿透",2],["物理伤害",2],["生命偷取",2],["伤害",1],["生命值",1]] },
+  { id:"survival", name:"生存续航类", color:"#42d3a6", kw:[
+      ["护盾",3],["减伤",3],["免疫",3],["无敌",3],["抵挡",3],["回复",3],
+      ["治疗",2],["韧性",2],["受伤",1],["生命值",1]] },
+  { id:"mech", name:"机制质变类", color:"#a78bfa", kw:[
+      ["变为",3],["改为",3],["重置",3],["多一次",3],["封印",3],["转化",2],
+      ["复制",2],["附带",2],["额外",1]] },
+  { id:"econ", name:"成长滚雪球类", color:"#f0b849", kw:[
+      ["叠加",3],["永久",3],["每次",2],["层数",2],["逐渐",2],["累计",2],["每击杀",3],["层",1]] },
+  { id:"team", name:"团队增益类", color:"#5fa8fa", kw:[
+      ["队友",3],["友军",3],["为友方",3],["全体",2],["附近",2],["目标",2]] },
+  { id:"gamble", name:"上限赌注类", color:"#f472b6", kw:[
+      ["随机",3],["概率",3],["如果",2],["赌",2]] }
+];
+
+var ROLE_BASE = {
+  tank:     { power:1.5, survival:3.0, mech:1.2, econ:1.0, team:2.5, gamble:0.6 },
+  fighter:  { power:2.6, survival:2.4, mech:1.8, econ:1.0, team:1.4, gamble:1.2 },
+  mage:     { power:2.8, survival:1.4, mech:2.4, econ:1.6, team:1.0, gamble:1.4 },
+  marksman: { power:2.8, survival:2.2, mech:2.0, econ:1.4, team:0.8, gamble:1.2 },
+  assassin: { power:2.8, survival:1.2, mech:2.6, econ:1.0, team:0.6, gamble:1.8 },
+  support:  { power:1.2, survival:2.2, mech:1.8, econ:1.0, team:3.0, gamble:0.6 }
+};
+var HP_FIX = {
+  healthy:  { survival:0,    power:0.2, mech:0,   econ:0.6,  team:0,   gamble:0.4 },
+  tight:    { survival:1.4,  power:0.6, mech:0.2, econ:-0.8, team:0.2, gamble:-0.6 },
+  critical: { survival:2.6,  power:0.8, mech:0.4, econ:-1.6, team:0.4, gamble:-1.2 }
+};
+var TIDE_FIX = {
+  ahead:  { survival:-0.6, power:0.2, mech:0.6, econ:1.4,  team:0.2, gamble:0.8 },
+  even:   { survival:0,    power:0.6, mech:0.6, econ:0,    team:0,   gamble:0 },
+  behind: { survival:1.2,  power:1.2, mech:0.4, econ:-1.2, team:0.4, gamble:-0.8 }
+};
+var GAP_FIX = {
+  front:{ survival:0.8, team:0.4 }, damage:{ power:0.9, mech:0.3 },
+  cc:{ team:0.8, mech:0.8 }, heal:{ team:1.0, survival:0.6 }
+};
+var ROLE_NAME = { tank:"坦克", fighter:"战士", mage:"法师", marksman:"射手", assassin:"刺客", support:"辅助" };
+var HP_NAME = { healthy:"血线健康", tight:"血线吃紧", critical:"濒死" };
+var TIDE_NAME = { ahead:"打得顺", even:"僵持", behind:"被压着" };
+var GAP_NAME = { front:"缺前排", damage:"缺输出", cc:"缺控制", heal:"缺续航" };
+
+(function buildCtx(){
+  var s = document.getElementById("ctxStage"), h = "";
+  for(var i=1;i<=4;i++) h += '<button class="chip ' + (i===1?"on":"") + '" data-s="' + i + '">第 ' + i + ' 阶段</button>';
+  s.innerHTML = h;
+  s.addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    Array.prototype.forEach.call(s.querySelectorAll(".chip"), function(x){ x.classList.remove("on"); });
+    b.classList.add("on"); ctx.stage = parseInt(b.getAttribute("data-s"),10); renderCtx();
+  });
+
+  var r = document.getElementById("ctxRole"), h2 = "";
+  Object.keys(ROLE_NAME).forEach(function(k){
+    h2 += '<button class="chip ' + (k==="mage"?"on":"") + '" data-r="' + k + '">' + ROLE_NAME[k] + '</button>';
+  });
+  r.innerHTML = h2;
+  r.addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    Array.prototype.forEach.call(r.querySelectorAll(".chip"), function(x){ x.classList.remove("on"); });
+    b.classList.add("on"); ctx.role = b.getAttribute("data-r"); renderCtx();
+  });
+
+  var hp = document.getElementById("ctxHp"), h3 = "";
+  Object.keys(HP_NAME).forEach(function(k){
+    h3 += '<button class="chip ' + (k==="healthy"?"on":"") + '" data-h="' + k + '">' + HP_NAME[k] + '</button>';
+  });
+  hp.innerHTML = h3;
+  hp.addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    Array.prototype.forEach.call(hp.querySelectorAll(".chip"), function(x){ x.classList.remove("on"); });
+    b.classList.add("on"); ctx.hp = b.getAttribute("data-h"); renderCtx();
+  });
+
+  var td = document.getElementById("ctxTide"), h4 = "";
+  Object.keys(TIDE_NAME).forEach(function(k){
+    h4 += '<button class="chip ' + (k==="even"?"on":"") + '" data-t="' + k + '">' + TIDE_NAME[k] + '</button>';
+  });
+  td.innerHTML = h4;
+  td.addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    Array.prototype.forEach.call(td.querySelectorAll(".chip"), function(x){ x.classList.remove("on"); });
+    b.classList.add("on"); ctx.tide = b.getAttribute("data-t"); renderCtx();
+  });
+
+  var g = document.getElementById("ctxGap"), h5 = "";
+  Object.keys(GAP_NAME).forEach(function(k){
+    h5 += '<button class="chip" data-g="' + k + '">' + GAP_NAME[k] + '</button>';
+  });
+  g.innerHTML = h5;
+  g.addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    var k = b.getAttribute("data-g"), i = ctx.gaps.indexOf(k);
+    if(i >= 0) ctx.gaps.splice(i,1); else ctx.gaps.push(k);
+    b.classList.toggle("on");
+    renderCtx();
+  });
+})();
+
+function scoreTypes(){
+  var sc = {};
+  TYPE_DEF.forEach(function(t){
+    var s = ROLE_BASE[ctx.role][t.id] || 0;
+    s += (HP_FIX[ctx.hp][t.id] || 0);
+    s += (TIDE_FIX[ctx.tide][t.id] || 0);
+    ctx.gaps.forEach(function(g){ s += ((GAP_FIX[g] || {})[t.id] || 0); });
+    sc[t.id] = Math.round(s * 100) / 100;
+  });
+  return TYPE_DEF.map(function(t){ return { t:t, s:sc[t.id] }; })
+                 .sort(function(a,b){ return b.s - a.s; });
+}
+
+/* 按效果文本，把海克斯归到类型（一个可归多类） */
+function mainTypeOf(eff){
+  eff = eff || "";
+  var best = "", bs = 0;
+  TYPE_DEF.forEach(function(t){
+    var sc = 0;
+    for(var i=0;i<t.kw.length;i++){
+      if(eff.indexOf(t.kw[i][0]) >= 0) sc += t.kw[i][1];
+    }
+    if(sc > bs){ bs = sc; best = t.id; }
+  });
+  return best;
+}
+var augTypes = A.map(function(a){ return mainTypeOf(a[8] || ""); });
+
+function augsForType(typeId, stage){
+  var out = [];
+  for(var i=0;i<A.length;i++){
+    if(augTypes[i] !== typeId) continue;
+    if(stage && A[i][6].indexOf(stage) < 0) continue;
+    if(A[i][3] == null) continue;
+    out.push({ i:i, a:A[i] });
+  }
+  out.sort(function(x,y){ return y.a[3] - x.a[3]; });
+  return out.slice(0, 8);
+}
+
+function reason(tid){
+  var r = [], role = ctx.role, hp = ctx.hp, tide = ctx.tide, gaps = ctx.gaps;
+  if(tid === "survival"){
+    if(hp === "critical") r.push("你现在是<b>濒死血线</b>，挨一套就没——这一轮不补生存，后面连打输出的机会都没有。");
+    if(hp === "tight") r.push("血线吃紧，先补容错再谈收益。被压着的时候，多活两秒就能多打一轮技能。");
+    if(role === "tank") r.push("你是<b>坦克</b>，减伤和回复在你身上是翻倍收益——你多站三秒，队友就多打三秒。");
+    if(gaps.indexOf("front") >= 0) r.push("队伍<b>缺前排</b>，你得往前顶，那就先得有扛住的资本。");
+    if(tide === "behind") r.push("逆风最怕的不是打不动，是一碰就碎。");
+  }
+  if(tid === "power"){
+    if(role === "mage" || role === "marksman") r.push("你是<b>主要输出位</b>，数值类直接乘在你的伤害上，最不容易空转。");
+    if(role === "assassin") r.push("你的活儿是一套把人打死，数值类直接抬高斩杀线。");
+    if(role === "fighter") r.push("战士本身有身板，补伤害能让你从「能扛」变成「能扛还能打」。");
+    if(role === "tank") r.push("坦克补数值不是指望自己打伤害，是别让人把你当空气。");
+    if(gaps.indexOf("damage") >= 0) r.push("队伍<b>缺输出</b>，这一轮补伤害直接补在刀刃上。");
+    if(hp === "critical") r.push("注意：血线这么低，纯补伤害有风险，先确认你能活到打出这波。");
+  }
+  if(tid === "mech"){
+    if(role === "assassin") r.push("刺客吃进场时机和一套爆发，机制类能给你<b>多一次机会</b>。");
+    if(role === "mage") r.push("法师的机制类常是把一个技能变成两个用——它给的不是数字，是原本打不出来的可能。");
+    if(role === "marksman") r.push("射手最怕被贴脸没辙，带位移自保的机制能把「必死」变成「能跑」。");
+    if(gaps.indexOf("cc") >= 0) r.push("队伍<b>缺控制</b>，机制类里常有附带控制或延长控制的。");
+    if(hp === "critical") r.push("濒死时能救命的机制（位移、无敌、重置）比任何数值都有用。");
+    if(tide === "behind") r.push("逆风靠数值翻不了盘，得靠一次「这套连招本来打不出来」的意外。");
+  }
+  if(tid === "econ"){
+    if(tide === "ahead") r.push("你已经<b>打得顺</b>，成长类是用优势换更大的优势。");
+    if(hp === "critical" || tide === "behind") r.push("但你现在局面不顺——拿成长等于把这一轮让掉。");
+  }
+  if(tid === "team"){
+    if(role === "support") r.push("你的价值本来就在队友身上，团队类是你的<b>放大器</b>。");
+    if(gaps.indexOf("heal") >= 0) r.push("队伍<b>缺续航</b>，团队类的治疗护盾补得最快。");
+    if(gaps.indexOf("front") >= 0) r.push("队伍缺前排，能让自己更耐打的团队类，等于替全队挡刀。");
+  }
+  if(tid === "gamble"){
+    if(tide === "ahead") r.push("顺风有余量赌上限，赌输了也不至于翻车。");
+    if(tide === "behind") r.push("逆风赌的是「翻盘唯一解」，赌不中就彻底没了——只在没别的路时选。");
+    if(hp === "critical") r.push("你这血线，赌输一次直接出局。");
+  }
+  if(!r.length) r.push("按你现在选的组合，这一类是稳妥的基础收益，谈不上多亮眼，但不会添麻烦。");
+  return r.slice(0,2).join(" ");
+}
+
+function renderCtx(){
+  var arr = scoreTypes();
+  var out = document.getElementById("ctxOut");
+  var top = arr.slice(0,3), worst = arr[arr.length-1];
+  var maxS = top[0].s, minS = arr[arr.length-1].s, span = (maxS - minS) || 1;
+
+  var h = '<div class="card" style="margin-top:13px"><div class="lbl" style="margin-bottom:10px">'
+    + '<b>第 ' + ctx.stage + ' 阶段 · ' + ROLE_NAME[ctx.role] + ' · ' + HP_NAME[ctx.hp] + ' · ' + TIDE_NAME[ctx.tide]
+    + (ctx.gaps.length ? " · " + ctx.gaps.map(function(g){ return GAP_NAME[g]; }).join(" ") : "")
+    + '</b> <i>这一轮按这个顺序选</i></div>';
+
+  top.forEach(function(o, k){
+    var pctW = 8 + ((o.s - minS) / span) * 92;
+    var rel = augsForType(o.t.id, ctx.stage);
+    h += '<div class="pickcard" style="--c:' + o.t.color + '">'
+      +  '<h4><span style="color:' + o.t.color + '">优先级 ' + (k+1) + ' · ' + o.t.name + '</span>'
+      +  '<span style="font-size:11px;color:#5d6b82;font-weight:400">候选 ' + rel.length + ' 个</span></h4>'
+      +  '<div style="height:3px;border-radius:2px;background:#1e2740;margin:7px 0 10px;overflow:hidden"><i style="display:block;height:100%;width:' + pctW.toFixed(1) + '%;background:' + o.t.color + '"></i></div>'
+      +  '<div class="why">' + reason(o.t.id) + '</div>';
+    if(rel.length){
+      h += '<div style="font-size:11px;color:#5d6b82;margin-top:9px">第 ' + ctx.stage + ' 阶段能出、效果对得上、胜率靠前的：</div><div class="rel">';
+      rel.forEach(function(x){
+        h += '<span class="relchip" title="' + esc(x.a[8]) + '">' + esc(x.a[0]) + ' <b>' + pct(x.a[3]) + '</b></span>';
+      });
+      h += '</div>';
+    }else{
+      h += '<div style="font-size:11.5px;color:#5d6b82;margin-top:9px">这一类的强化效果都不太典型，没匹配到候选——直接看三个选项的实际说明。</div>';
+    }
+    h += '</div>';
+  });
+
+  h += '<div class="pickcard" style="--c:#ff7a7a;background:rgba(255,122,122,.05);border-color:rgba(255,122,122,.25)">'
+    +  '<h4 style="color:#ff9a9a">这轮尽量别碰 · ' + worst.t.name + '</h4>'
+    +  '<div class="why">' + avoidText(worst.t.id) + '</div></div>';
+
+  h += '<div class="note">「候选」是<b>按效果原文的关键词给每个海克斯判一个主类别</b>得出的，不是站方的官方分类，偶尔会判偏。'
+    + '它的作用是缩范围——真正的取舍还是看游戏里那行说明。拿不准就用「三选一对比」直接查这三个。</div></div>';
+
+  out.innerHTML = h;
+}
+
+function avoidText(id){
+  var low = ctx.hp === "critical" || ctx.hp === "tight";
+  var m = {
+    power: low
+      ? "你血线这么低，补伤害的典型结果是「伤害打得出来，人已经死了」。先把命保住。"
+      : "你现在最不缺的就是伤害。补伤害的典型结果是：打得更疼了，但该输的团还是输，因为输的原因不在伤害。",
+    survival: low
+      ? "你确实血线低，但如果你这一轮本来就没有被集火的风险（一直在后排、局面刚稳住），再堆生存就是浪费一轮输出。"
+      : "生存类拿早了的典型症状：整局都很安全，但也整局都打不动人。",
+    mech: "机制类大多带条件，条件不满足就是个白板。你这局没余量去凑条件。",
+    econ: "成长类要时间兑现，而你现在最缺的就是时间——这一轮让掉，下一轮未必补得回来。",
+    team: ctx.role === "support"
+      ? "你是辅助，团队类本来是主场。说别碰只是相对这一轮而言——如果有更直接补短板的，优先那个。"
+      : "先保证自己站得住、打得动，再去管队友。自己先崩了，团队类一点用都没有。",
+    gamble: "赌类只在没别的路的时候选。你现在还有稳的路，别把这一轮交给概率。"
+  };
+  return m[id] || "这一类和你现在的局面不太搭。";
+}
+
+
+/* ================= 实时数据 ================= */
+var LIVE = { on:false, wait:true, fetchedAt:"", version:"", updated:"", count:0, added:0, err:"", msg:"" };
+
+function apiBase(force){
+  var base = (location.protocol === "http:" || location.protocol === "https:")
+    ? "/api/ranks"
+    : "http://127.0.0.1:8765/api/ranks";
+  return base + (force ? "?refresh=1" : "");
+}
+
+function rarIndex(r){
+  return r === "prismatic" ? 3 : r === "gold" ? 2 : r === "silver" ? 1 : 0;
+}
+
+function mergeLive(d){
+  var map = {};
+  for(var i = 0; i < A.length; i++) map[A[i][1]] = i;
+  var added = 0;
+  (d.items || []).forEach(function(it){
+    var i = map[it.s];
+    if(i === undefined){
+      i = A.length;
+      A.push([it.n, it.s, it.t || "", it.w, it.p, rarIndex(it.r), it.g || [], null, ""]);
+      augTypes.push(mainTypeOf(""));
+      map[it.s] = i;
+      added++;
+    } else {
+      if(it.t) A[i][2] = it.t;
+      if(it.w != null) A[i][3] = it.w;
+      if(it.p != null) A[i][4] = it.p;
+      if(it.g && it.g.length) A[i][6] = it.g;
+    }
+  });
+  LIVE.added = added;
+}
+
+function renderLive(){
+  var line = document.getElementById("liveLine");
+  var txt = document.getElementById("liveText");
+  if(!line || !txt) return;
+  var dot = line.querySelector(".dot");
+
+  if(LIVE.wait){
+    if(dot) dot.className = "dot wait";
+    txt.innerHTML = "正在连接实时数据…";
+    return;
+  }
+  if(LIVE.on){
+    if(dot) dot.className = "dot on";
+    var hm = LIVE.fetchedAt ? LIVE.fetchedAt.slice(11, 16) : "";
+    txt.innerHTML = '<b style="color:#6ee0bd">实时</b> · v' + esc((LIVE.version || DB.v).replace(/^v/, ""))
+      + ' · 更新于 ' + esc(hm) + ' · ' + LIVE.count + " 条"
+      + (LIVE.msg ? ' · <span style="color:#9fe8cf">' + esc(LIVE.msg) + "</span>" : "")
+      + ' <button class="dbar-btn" id="refreshBtn">检查更新</button>';
+  } else {
+    if(dot) dot.className = "dot off";
+    txt.innerHTML = '<b style="color:#8494ab">离线快照</b> · v' + esc(DB.v) + ' · ' + esc(DB.d)
+      + ' <button class="dbar-btn" id="refreshBtn">检查更新</button>';
+  }
+  var b = document.getElementById("refreshBtn");
+  if(b) b.addEventListener("click", function(){ tryLive(true); });
+}
+
+function rerenderAll(){
+  try{ renderCompare(); }catch(e){}
+  try{ renderAll(); }catch(e){}
+  try{ renderCtx(); }catch(e){}
+  if(pickedChamp){ try{ renderChampView(pickedChamp); }catch(e){} }
+}
+
+var GAME = null;
+var GAME_SLUG = null;
+var autoPickedFor = "";
+var manualOverride = false;
+
+/* 浏览器打开和 exe 打开，取数据的方式不一样 */
+function callRanks(force){
+  if(window.pywebview && window.pywebview.api && window.pywebview.api.get_ranks){
+    return window.pywebview.api.get_ranks(!!force);
+  }
+  return fetch(apiBase(force), { cache: "no-store" }).then(function(r){ return r.json(); });
+}
+
+function hasDesktop(){
+  return !!(window.pywebview && window.pywebview.api && window.pywebview.api.get_live);
+}
+
+/* 把「最新的完整名单」回传给桌面版，识别器立刻换成这份（并存到本地，下次启动还在） */
+function syncNames(cb){
+  if(!hasDesktop() || !window.pywebview.api || !window.pywebview.api.sync_names){
+    if(cb) cb(0);
+    return;
+  }
+  var pairs = [];
+  for(var i = 0; i < A.length; i++) pairs.push([i, A[i][0]]);
+  window.pywebview.api.sync_names(pairs).then(function(r){
+    var n = (r && r.ok && r.count) || 0;
+    if(cb) cb(n);
+  }).catch(function(){ if(cb) cb(0); });
+}
+
+function tryLive(force){
+  LIVE.wait = true;
+  LIVE.msg = "";
+  renderLive();
+
+  callRanks(force).then(function(d){
+    if(!d || !d.ok) throw new Error((d && d.error) || "服务返回异常");
+    mergeLive(d);
+    LIVE.on = true; LIVE.wait = false; LIVE.err = "";
+    LIVE.fetchedAt = d.fetchedAt || "";
+    LIVE.version = d.version || "";
+    LIVE.updated = d.updated || "";
+    LIVE.count = d.total || 0;
+    renderLive();
+    rerenderAll();
+    // 家底变了就把新名单交给识别器 —— 以后出新海克斯不用等重新打包
+    syncNames(function(n){
+      LIVE.msg = (LIVE.added ? ("新增 " + LIVE.added + " 张 · ") : "已是最新 · ")
+        + "能认 " + n + " 张";
+      renderLive();
+    });
+  }).catch(function(e){
+    LIVE.on = false; LIVE.wait = false;
+    LIVE.err = String((e && e.message) || e);
+    renderLive();
+  });
+}
+
+/* ================= 程序自更新（GitHub Releases） ================= */
+var APP = { v:"", auto:false, repo:"", info:null, phase:"idle", pct:0, msg:"" };
+
+function renderApp(){
+  var line = document.getElementById("appLine");
+  var txt = document.getElementById("appText");
+  if(!line || !txt) return;
+  if(!APP.v){ line.style.display = "none"; return; }
+  line.style.display = "";
+
+  var s = "";
+  if(!APP.auto){
+    s = '<b style="color:#8494ab">程序 v' + esc(APP.v) + "</b>";
+  } else if(APP.info && APP.info.has_new){
+    s = '<b style="color:#f0b849">有新版本 ' + esc(APP.info.latest) + "</b>（当前 v" + esc(APP.v) + "）"
+      + ' <button class="dbar-btn" id="upBtn">升级</button>';
+  } else if(APP.phase === "downloading"){
+    s = '<b style="color:#9fe8cf">正在下载 ' + APP.pct + "%</b>";
+  } else if(APP.phase === "extracting"){
+    s = '<b style="color:#9fe8cf">正在解压…</b>';
+  } else if(APP.phase === "ready"){
+    s = '<b style="color:#6ee0bd">新版本已就绪</b> <button class="dbar-btn" id="upBtn">立即重启并升级</button>';
+  } else if(APP.phase === "error"){
+    s = '<b style="color:#d99a9a">升级失败</b> <span style="color:#8494ab">' + esc(APP.msg || "") + "</span>"
+      + ' <button class="dbar-btn" id="upBtn">重试</button>';
+  } else {
+    s = '<b style="color:#8494ab">程序 v' + esc(APP.v) + "</b>"
+      + (APP.msg ? ' · <span style="color:#9fe8cf">' + esc(APP.msg) + "</span>" : "")
+      + ' <button class="dbar-btn" id="upBtn">检查更新</button>';
+  }
+  txt.innerHTML = s;
+  var b = document.getElementById("upBtn");
+  if(b) b.addEventListener("click", onUpClick);
+}
+
+function onUpClick(){
+  if(!hasDesktop() || !window.pywebview.api) return;
+  if(APP.phase === "ready"){
+    if(!confirm("现在会关掉程序、替换成新版本，然后自动重新打开。继续？")) return;
+    window.pywebview.api.app_apply_update().catch(function(){});
+    return;
+  }
+  if(APP.info && APP.info.has_new){          // 已有版本信息 → 开始下载
+    APP.phase = "downloading"; APP.pct = 0; renderApp();
+    window.pywebview.api.app_download_update(APP.info).then(function(){
+      pollAppUpdate();
+    });
+    return;
+  }
+  APP.msg = "正在检查…"; renderApp();
+  window.pywebview.api.app_check_update().then(function(d){
+    if(!d || !d.ok){
+      APP.msg = (d && d.detail) || "检查失败";
+      APP.info = null; renderApp(); return;
+    }
+    APP.info = d;
+    APP.msg = d.has_new ? "" : "已是最新";
+    renderApp();
+  }).catch(function(){ APP.msg = "检查失败"; renderApp(); });
+}
+
+function pollAppUpdate(){
+  if(!hasDesktop() || !window.pywebview.api) return;
+  window.pywebview.api.app_update_state().then(function(s){
+    if(!s) return;
+    APP.phase = s.phase || "idle";
+    if(s.total > 0) APP.pct = Math.min(100, Math.round(s.done * 100 / s.total));
+    APP.msg = s.err || s.msg || "";
+    renderApp();
+    if(APP.phase === "downloading" || APP.phase === "extracting"){
+      setTimeout(pollAppUpdate, 400);
+    }
+  }).catch(function(){});
+}
+
+function initApp(){
+  if(!hasDesktop() || !window.pywebview.api || !window.pywebview.api.app_version) return;
+  window.pywebview.api.app_version().then(function(d){
+    APP.v = (d && d.version) || "";
+    APP.auto = !!(d && d.auto);
+    APP.repo = (d && d.repo) || "";
+    renderApp();
+    if(APP.auto){                       // 启动时安静地查一下，有新版才吭声
+      window.pywebview.api.app_check_update().then(function(r){
+        if(r && r.ok){ APP.info = r; if(!r.has_new) APP.msg = ""; renderApp(); }
+      }).catch(function(){});
+    }
+  }).catch(function(){});
+}
+
+/* ---- 游戏内状态 ---- */
+function pollGame(){
+  if(!hasDesktop()) return;
+  window.pywebview.api.get_live().then(function(d){
+    var was = GAME_SLUG || "";
+    GAME = (d && d.ok) ? d : null;
+    renderGame();
+    renderTeam();
+
+    var slug = GAME ? resolveChamp(GAME.champion) : null;
+    GAME_SLUG = slug;
+
+    if(slug){
+      var changed = (slug !== was);
+      if(changed) manualOverride = false;
+
+      var c = champBySlug[slug];
+      if(c && !manualOverride && pickedChamp !== slug){
+        pickedChamp = slug;
+        autoPickedFor = slug;
+        champIn.value = champLabel(c);
+        var ci2 = document.getElementById("champInput2");
+        if(ci2) ci2.value = champLabel(c);
+        renderPicked();
+        renderCompare();
+        try{ renderChampView(slug); }catch(e){}
+        switchTab("champ");
+      }
+    }
+  }).catch(function(){});
+}
+
+function renderGame(){
+  var line = document.getElementById("gameLine");
+  var txt = document.getElementById("gameText");
+  if(!line || !txt) return;
+
+  if(!hasDesktop()){ line.style.display = "none"; return; }
+
+  if(GAME){
+    line.style.display = "flex";
+    var dot = line.querySelector(".dot");
+    if(dot) dot.className = "dot on";
+    var t = Math.max(0, GAME.gameTime || 0);
+    var mm = Math.floor(t / 60), ss = Math.floor(t % 60);
+    var modeCn = GAME_MODE_NAME[GAME.gameMode] || GAME.gameMode || "";
+    var champShow = GAME_SLUG ? champNameOf(GAME_SLUG, GAME.champion) : (GAME.champion || "?");
+    var known = !!GAME_SLUG;
+    txt.innerHTML = '<b style="color:#6ee0bd">对局中</b> · '
+      + (known ? champShow : champShow + ' <span style="color:#c9a24a">(库里没这个英雄的正式名)</span>')
+      + " · " + (GAME.level || "?") + " 级 · "
+      + (mm < 10 ? "0" : "") + mm + ":" + (ss < 10 ? "0" : "") + ss
+      + (modeCn ? ' <span style="color:#5d6b82">' + esc(modeCn) + "</span>" : "");
+  } else {
+    line.style.display = "flex";
+    var d2 = line.querySelector(".dot");
+    if(d2) d2.className = "dot off";
+    txt.innerHTML = '<span style="color:#8494ab">未检测到对局</span>'
+      + ' <span style="color:#5d6b82">— 进游戏后会自动认英雄</span>';
+  }
+}
+
+/* 用户手动选了英雄，就不要再被游戏自动覆盖 */
+document.addEventListener("mousedown", function(e){
+  var t = e.target;
+  if(t && t.closest && t.closest("#champSug .sug-item, #champSug2 .sug-item")) manualOverride = true;
+}, true);
+
+window.addEventListener("pywebviewready", function(){
+  if(!LIVE.on) tryLive(false);
+  pollGame();
+  setInterval(pollGame, 5000);
+});
+
+/* ================= 标签切换 ================= */
+function switchTab(v){
+  var b = document.querySelector('.tab[data-v="' + v + '"]');
+  if(!b) return;
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(x){ x.classList.toggle("on", x === b); });
+  Array.prototype.forEach.call(document.querySelectorAll(".view"), function(x){ x.classList.toggle("on", x.id === "view-" + v); });
+  if(v === "all" && !document.getElementById("allBody").children.length) renderAll();
+  if(v === "team") renderTeam(true);
+}
+
+document.querySelector(".tabs").addEventListener("click", function(e){
+  var b = e.target.closest(".tab");
+  if(!b) return;
+  switchTab(b.getAttribute("data-v"));
+});
+
+/* ================= 启动 ================= */
+renderSlots();
+renderCompare();
+renderAll();
+renderCtx();
+renderTeam(true);
+tryLive(false);
+setInterval(function(){ tryLive(false); }, 600000);
+initApp();
+
+})();
+</script>
+</body>
+</html>
