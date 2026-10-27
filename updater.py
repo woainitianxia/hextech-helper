@@ -179,8 +179,11 @@ def _stage_dir():
     return d
 
 
-def download_and_stage(info):
-    """下 zip、解压、写好替换脚本。返回 {ok, script, dest, newdir}。"""
+def download_and_stage(info, dest=None):
+    """下 zip、解压、写好替换脚本。返回 {ok, script, dest, newdir}。
+
+    dest 一般不用传（默认就是程序自己所在的目录），测试时才指定。
+    """
     STATE.update({"phase": "downloading", "done": 0, "total": info.get("size") or 0,
                   "msg": "正在下载新版本…", "err": ""})
     work = _stage_dir()
@@ -228,7 +231,7 @@ def download_and_stage(info):
         STATE.update({"phase": "error", "err": "包里没有主程序"})
         return {"ok": False, "detail": "这个 zip 里没找到「海克斯决策助手.exe」，不是程序的包？"}
 
-    dest = os.path.dirname(os.path.abspath(sys.executable))
+    dest = dest or os.path.dirname(os.path.abspath(sys.executable))
     ps1 = os.path.join(work, "apply.ps1")
     # 注意：PowerShell 5.1 读无 BOM 的 UTF-8 会按 GBK 解，中文路径直接乱码 → 必须 utf-8-sig
     script = u"""$ErrorActionPreference = 'SilentlyContinue'
